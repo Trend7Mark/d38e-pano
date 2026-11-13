@@ -1357,6 +1357,14 @@ const ERR = {
 };
 
 /* ============ Ninebot protokolü ============ */
+const uid = u => String(u).toLowerCase();
+const asc = a => Array.from(a, b => b >= 32 && b < 127 ? String.fromCharCode(b) : ".").join("");
+function errTxt(e){
+  if (e == null) return "bilinmeyen hata";
+  if (e.name || e.message) return `${e.name || "Hata"}: ${e.message || ""}`;
+  try { const j = JSON.stringify(e); if (j && j !== "{}") return j; } catch(_){}
+  return String(e);
+}
 const NUS = "6e400001-b5a3-f393-e0a9-e50e24dcca9e", NUS_TX = "6e400002-b5a3-f393-e0a9-e50e24dcca9e", NUS_RX = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
 const APP = 0x3E, ESC = 0x20, BMS = 0x22;
 function nbPacket(body){ // body: [len, src, dst, cmd, arg, ...data]
@@ -1462,8 +1470,8 @@ async function pickDevice(){
       return await navigator.bluetooth.requestDevice(tries[i]);
     } catch(e){
       last = e;
-      logLine("sys", `Deneme ${i+1} başarısız: ${e.name}: ${e.message}`);
-      if (e.name === "NotFoundError" || e.name === "AbortError") throw e; // kullanıcı vazgeçti veya cihaz yok
+      logLine("sys", `Deneme ${i+1} başarısız: ${errTxt(e)}`);
+      if (e && (e.name === "NotFoundError" || e.name === "AbortError")) throw e; // kullanıcı vazgeçti veya cihaz yok
     }
   }
   throw last;
@@ -1485,33 +1493,38 @@ async function connect(){
     const list = [];
     for (const s of svcs){
       const chars = await s.getCharacteristics().catch(()=>[]);
-      list.push(`<div class="svc">${s.uuid}${s.uuid===NUS?' <b>(Nordic UART)</b>':''}${chars.map(c=>{ const p=c.properties; const fl=[p.read&&"okuma",p.write&&"yazma",p.writeWithoutResponse&&"yanıtsız yazma",p.notify&&"bildirim",p.indicate&&"indicate"].filter(Boolean).join(", "); return `<div>└ ${c.uuid} · ${fl}</div>`; }).join("")}</div>`);
+      list.push(`<div class="svc">${s.uuid}${uid(s.uuid)===NUS?' <b>(Nordic UART)</b>':''}${chars.map(c=>{ const p=c.properties; const fl=[p.read&&"okuma",p.write&&"yazma",p.writeWithoutResponse&&"yanıtsız yazma",p.notify&&"bildirim",p.indicate&&"indicate"].filter(Boolean).join(", "); return `<div>└ ${c.uuid} · ${fl}</div>`; }).join("")}</div>`);
       for (const c of chars){
         if (c.properties.notify || c.properties.indicate){
-          try { await c.startNotifications(); c.addEventListener("characteristicvaluechanged", e => onRx(new Uint8Array(e.target.value.buffer))); } catch(e){ logLine("sys", `Bildirim açılamadı ${c.uuid}: ${e.message}`); }
+          try { await c.startNotifications(); const su = s.uuid, cu = c.uuid; c.addEventListener("characteristicvaluechanged", e => onRx(new Uint8Array(e.target.value.buffer), uid(su) === NUS ? "" : `[${su}/${cu}] `)); } catch(e){ logLine("sys", `Bildirim açılamadı ${c.uuid}: ${errTxt(e)}`); }
         }
-        if (c.uuid === NUS_TX) txChar = c;
-        else if (!txChar && (c.properties.writeWithoutResponse || c.properties.write) && s.uuid === NUS) txChar = c;
+        if (uid(c.uuid) === NUS_TX) txChar = c;
+        else if (!txChar && (c.properties.writeWithoutResponse || c.properties.write) && uid(s.uuid) === NUS) txChar = c;
+        if (c.properties.read){
+          try { const v = new Uint8Array((await c.readValue()).buffer); logLine("sys", `Okundu ${s.uuid}/${c.uuid}: ${hex(v)} | ${asc(v)}`); }
+          catch(e){ logLine("sys", `Okunamadı ${s.uuid}/${c.uuid}: ${errTxt(e)}`); }
+        }
       }
       logLine("sys", `Servis: ${s.uuid} (${chars.length} karakteristik)`);
     }
     $("svcList").innerHTML = list.join("") || '<span class="muted small">Erişilebilir servis bulunamadı. Servis UUID\'sini Claude\'a iletin, listeye eklensin.</span>';
-    if (!svcs.find(s=>s.uuid===NUS)) logLine("sys","Nordic UART servisi bulunamadı. Servis listesini kopyalayıp Claude'a getirin.");
+    if (!svcs.find(s=>uid(s.uuid)===NUS)) logLine("sys","Nordic UART servisi bulunamadı. Servis listesini kopyalayıp Claude'a getirin.");
+    logLine("sys", txChar ? `Yazma kanalı: ${txChar.uuid}` : "Yazma kanalı bulunamadı");
     if ($("pollOn").checked && txChar){
       pollTimer = setInterval(() => { send(POLL[pollIdx++ % POLL.length]()); }, 350);
       protoTimer = setTimeout(() => { if (!frames) setProto(rxCount ? "enc" : "none"); }, 4000);
     }
   } catch(e){
-    if (e.name === "NotFoundError") { setConn(mode==="demo"?"demo":"idle", mode==="demo"?"Demo verisi":"Bağlı değil"); logLine("sys",`Cihaz seçilmedi veya bulunamadı (${e.message})`); $("dvState").textContent = "Cihaz seçilmedi / bulunamadı"; toast("Cihaz seçilmedi veya bulunamadı"); return; }
-    setConn("crit","Bağlantı hatası"); logLine("sys", `Hata: ${e.name}: ${e.message}`);
-    $("dvState").textContent = `Hata: ${e.name}: ${e.message}`; toast("Bağlantı hatası: " + e.message); showTab("gelistirici");
-    if (/permission|policy|allowed|SecurityError/i.test(e.name+e.message)) { showTab("gelistirici"); $("btSupportText").innerHTML = "Bu önizleme penceresi Bluetooth'a izin vermiyor. Sayfayı GitHub Pages gibi kendi adresinizde açın (bilgisayarda Chrome, iPhone'da Bluefy)."; }
+    if (e && e.name === "NotFoundError") { setConn(mode==="demo"?"demo":"idle", mode==="demo"?"Demo verisi":"Bağlı değil"); logLine("sys",`Cihaz seçilmedi veya bulunamadı (${e.message})`); $("dvState").textContent = "Cihaz seçilmedi / bulunamadı"; toast("Cihaz seçilmedi veya bulunamadı"); return; }
+    setConn("crit","Bağlantı hatası"); logLine("sys", `Hata: ${errTxt(e)}`);
+    $("dvState").textContent = `Hata: ${errTxt(e)}`; toast("Bağlantı hatası: " + errTxt(e)); showTab("gelistirici");
+    if (/permission|policy|allowed|SecurityError/i.test(errTxt(e))) { showTab("gelistirici"); $("btSupportText").innerHTML = "Bu önizleme penceresi Bluetooth'a izin vermiyor. Sayfayı GitHub Pages gibi kendi adresinizde açın (bilgisayarda Chrome, iPhone'da Bluefy)."; }
   }
 }
-function onRx(bytes){
+function onRx(bytes, tag = ""){
   rxCount++; $("dvRx").textContent = rxCount;
-  logLine("rx", hex(bytes));
-  nbFeed(bytes);
+  logLine("rx", tag + hex(bytes));
+  if (!tag) nbFeed(bytes);
 }
 function onDisconnected(){
   clearInterval(pollTimer); pollTimer = null; txChar = null;
