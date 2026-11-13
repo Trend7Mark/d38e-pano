@@ -1,0 +1,1720 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2F4F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1117" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="D38E Pano">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>D38E Sürüş Panosu</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: gidon ekranı gibi — üstte bağlantı şeridi, sekmeler, altta tek kolon kartlar; geniş ekranda iki kolon */
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --surface-2:#E8ECF2; --line:#D6DDE7;
+  --fg:#131922; --fg-2:#465365; --muted:#768396;
+  --accent:#2756E8; --accent-soft:rgba(39,86,232,.10); --accent-light:#BFCDF7;
+  --good:#1B8752; --warn:#A86B12; --crit:#C8322A;
+  --good-soft:rgba(27,135,82,.12); --warn-soft:rgba(168,107,18,.13); --crit-soft:rgba(200,50,42,.12);
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1117; --surface:#151B24; --surface-2:#1D2531; --line:#2A3443;
+  --fg:#E6EBF2; --fg-2:#A8B3C2; --muted:#7B8798;
+  --accent:#7F9CFF; --accent-soft:rgba(127,156,255,.15); --accent-light:#2F3E6E;
+  --good:#45C283; --warn:#E3A940; --crit:#F2685E;
+  --good-soft:rgba(69,194,131,.14); --warn-soft:rgba(227,169,64,.15); --crit-soft:rgba(242,104,94,.15);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1117; --surface:#151B24; --surface-2:#1D2531; --line:#2A3443;
+  --fg:#E6EBF2; --fg-2:#A8B3C2; --muted:#7B8798;
+  --accent:#7F9CFF; --accent-soft:rgba(127,156,255,.15); --accent-light:#2F3E6E;
+  --good:#45C283; --warn:#E3A940; --crit:#F2685E;
+  --good-soft:rgba(69,194,131,.14); --warn-soft:rgba(227,169,64,.15); --crit-soft:rgba(242,104,94,.15);
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-block:12px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:26px} h2{font-size:19px} h3{font-size:15px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono);font-size:12px}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)} .fg2{color:var(--fg-2)}
+button,select,input{font:inherit;color:inherit}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0D1117}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary{color:#0D1117}}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.conn{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.pill.demo{background:var(--accent-soft);color:var(--accent)}
+.pill.ok{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.idle{background:var(--surface-2);color:var(--fg-2)}
+
+nav.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:16px;scrollbar-width:none}
+nav.tabs button{border:0;background:none;padding:10px 12px;cursor:pointer;color:var(--fg-2);font-weight:500;border-bottom:2px solid transparent;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.card-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.banner{border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;align-items:flex-start}
+.banner.crit{background:var(--crit-soft);color:var(--crit)}
+.banner.warn{background:var(--warn-soft);color:var(--warn)}
+.banner.info{background:var(--accent-soft);color:var(--fg)}
+.banner b{color:inherit}
+.ico{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid currentColor;display:inline-grid;place-items:center;font-size:11px;font-weight:700;line-height:1}
+
+/* Speed hero */
+.hero{display:grid;grid-template-columns:minmax(0,240px) 1fr;gap:18px;align-items:center}
+@media (max-width:640px){.hero{grid-template-columns:1fr}}
+.gauge{position:relative;width:100%;max-width:260px;margin:0 auto;aspect-ratio:1/0.82}
+.gauge svg{width:100%;height:100%;display:block}
+.gauge .read{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:8%}
+.gauge .speed{font-family:var(--f-display);font-weight:700;font-size:64px;line-height:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.kpi{background:var(--surface-2);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .v{font-family:var(--f-display);font-size:24px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:13px;color:var(--muted);font-weight:500;margin-left:2px}
+
+/* charts */
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;overflow:visible}
+.chart .tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);border-radius:6px;padding:5px 8px;font-size:12px;white-space:nowrap;transform:translate(-50%,-110%);font-variant-numeric:tabular-nums}
+.chart text{fill:var(--muted);font-size:11px;font-family:var(--f-body)}
+
+/* scooter çizimi */
+.hero-art{min-width:0}
+#scooter{width:100%;height:auto;display:block;max-height:250px}
+#scooter text{font-family:var(--f-body);font-size:11px;fill:var(--muted);letter-spacing:.02em}
+#scooter text.val{font-family:var(--f-display);font-size:17px;font-weight:600;fill:var(--fg);letter-spacing:0}
+#scooter text.badge{font-size:10px;font-weight:700;letter-spacing:.1em}
+.flow{stroke-dasharray:6 8;animation:flow 1s linear infinite}
+.flow.rev{animation-direction:reverse}
+@keyframes flow{to{stroke-dashoffset:-28}}
+@media (prefers-reduced-motion:reduce){.flow{animation:none}}
+.kpi{position:relative}
+.mring{position:absolute;right:10px;bottom:10px;width:30px;height:30px}
+label.row{flex-wrap:nowrap;align-items:flex-start}
+.pack svg,.heat svg{display:block;max-width:100%}
+.heat{overflow-x:auto}
+#tripList{max-height:600px;overflow:auto;padding-right:2px}
+.ramp-sq{display:inline-flex;gap:3px;vertical-align:middle}
+.ramp-sq i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+/* battery */
+.battbar{height:14px;border-radius:7px;background:var(--surface-2);overflow:hidden}
+.battbar>div{height:100%;background:var(--accent);border-radius:7px;transition:width .4s}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+td.r,th.r{text-align:right}
+.tscroll{overflow-x:auto}
+
+/* trips */
+.trip{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--surface);text-align:left;width:100%}
+.trip:hover,.trip[aria-current="true"]{border-color:var(--accent)}
+.trip .meta{font-size:12px;color:var(--muted)}
+.tag{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:6px}
+.route{width:100%;aspect-ratio:16/10;max-width:100%;background:var(--surface-2);border-radius:8px}
+.legend-ramp{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.legend-ramp span.ramp{flex:0 0 120px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--accent-light),var(--accent))}
+.reclive{display:flex;align-items:center;gap:8px}
+.recdot{width:10px;height:10px;border-radius:50%;background:var(--crit);animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.recdot{animation:none}.battbar>div{transition:none}}
+
+/* controls */
+.ctl{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.ctl:last-child{border-bottom:0}
+.switch{position:relative;width:46px;height:26px;flex:none}
+.switch input{opacity:0;width:100%;height:100%;margin:0;position:absolute;cursor:pointer;z-index:1}
+.switch span{position:absolute;inset:0;border-radius:13px;background:var(--surface-2);border:1px solid var(--line);transition:background .2s}
+.switch span::after{content:"";position:absolute;width:20px;height:20px;border-radius:50%;background:var(--fg-2);top:2px;left:2px;transition:transform .2s}
+.switch input:checked+span{background:var(--accent)}
+.switch input:checked+span::after{transform:translateX(20px);background:var(--surface)}
+.switch input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+
+/* dev */
+.log{background:var(--surface-2);border-radius:8px;padding:10px;height:260px;overflow:auto;font-family:var(--f-mono);font-size:11.5px;line-height:1.55;white-space:pre-wrap;word-break:break-all}
+.log .tx{color:var(--accent)} .log .rx{color:var(--fg)} .log .sys{color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],input[type=number],select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+input.grow{flex:1 1 220px}
+.svc{font-family:var(--f-mono);font-size:12px;padding:8px;border-radius:6px;background:var(--surface-2)}
+.svc div{padding-left:14px;color:var(--fg-2)}
+.small{font-size:12px}
+ol.steps{margin:0;padding-left:20px;display:grid;gap:6px}
+
+/* ===== sürüş modu: bilerek tek (koyu) görünüm, gidonda güneşte okunacak ===== */
+:root{--rm-bg:#04060A;--rm-fg:#F4F7FB;--rm-dim:#8B96AA;--rm-track:#131924;--rm-accent:#6F92FF;--rm-accent2:#9EE6FF;--rm-good:#45C283;--rm-warn:#F0B040;--rm-crit:#F2685E}
+#ride{position:fixed;inset:0;z-index:100;background:var(--rm-bg);color:var(--rm-fg);display:flex;flex-direction:column;gap:8px;overflow:hidden;
+  padding:max(12px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(14px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));--glow:.2}
+#rideFx{position:absolute;inset:0;width:100%;height:100%}
+#ride>*:not(canvas){position:relative}
+.rm-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rm-chip{font-size:12px;font-weight:600;border-radius:999px;padding:4px 12px;background:var(--rm-track);color:var(--rm-dim);white-space:nowrap}
+.rm-chip.rec{color:var(--rm-crit)}
+.rm-clock{font-family:var(--f-display);font-size:20px;font-weight:600;color:var(--rm-dim)}
+.rm-x{width:44px;height:44px;border-radius:50%;border:1px solid var(--rm-track);background:var(--rm-track);color:var(--rm-fg);font-size:18px;cursor:pointer}
+.rm-main{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.5vmin}
+.rm-dial{position:relative;width:min(88vw,58vh,560px);aspect-ratio:1;max-width:100%}
+.rm-dial::before{content:"";position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle,var(--rm-accent) 0%,transparent 68%);opacity:calc(var(--glow)*.35)}
+.rm-dial svg{position:relative;width:100%;height:100%;display:block;overflow:visible}
+#rmArc{filter:drop-shadow(0 0 10px var(--rm-accent))}
+#rmArc.over{stroke:var(--rm-warn);filter:drop-shadow(0 0 12px var(--rm-warn))}
+.rm-dial text{fill:var(--rm-dim);font-family:var(--f-display);font-size:13px;font-weight:600}
+.rm-read{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.rm-speed{font-family:var(--f-display);font-weight:700;font-size:min(42vw,27vh,270px);line-height:.86;letter-spacing:-.02em}
+.rm-unit{font-size:clamp(13px,3.4vmin,20px);color:var(--rm-dim);letter-spacing:.14em;text-transform:uppercase;margin-top:1vmin}
+.rm-power{width:min(88vw,560px)}
+.rm-pbar{position:relative;height:12px;border-radius:6px;background:var(--rm-track);overflow:hidden}
+.rm-pbar>div{position:absolute;top:0;bottom:0;width:0}
+#rmRegen{right:50%;background:var(--rm-good);border-radius:6px 0 0 6px}
+#rmDrive{left:50%;background:linear-gradient(90deg,var(--rm-accent),var(--rm-accent2));border-radius:0 6px 6px 0}
+.rm-pzero{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--rm-dim)}
+.rm-plabel{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--rm-dim);margin-top:5px}
+.rm-plabel b{font-family:var(--f-display);font-size:18px;color:var(--rm-fg);letter-spacing:0;text-transform:none}
+.rm-bottom{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rm-stat{background:var(--rm-track);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.rm-l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--rm-dim);font-weight:600}
+.rm-v{font-family:var(--f-display);font-weight:600;font-size:clamp(22px,6.4vmin,40px);line-height:1.1;white-space:nowrap}
+.rm-v small{font-size:.5em;color:var(--rm-dim);margin-left:3px;font-weight:500}
+.rm-bbar{height:6px;border-radius:3px;background:var(--rm-bg);overflow:hidden}
+.rm-bbar>div{height:100%;border-radius:3px;background:var(--rm-good);transition:width .5s}
+.rm-rec{grid-column:1/-1;min-height:50px;border-radius:14px;border:1px solid var(--rm-track);background:var(--rm-track);color:var(--rm-fg);font-weight:600;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+.rm-rec.on{border-color:var(--rm-crit);color:var(--rm-crit)}
+.rm-err{background:var(--rm-crit);color:var(--rm-bg);border-radius:12px;padding:10px 14px;font-weight:600;text-align:center}
+#ride :focus-visible{outline:2px solid var(--rm-accent2);outline-offset:2px}
+@media (orientation:landscape) and (max-height:560px){
+  #ride{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);grid-template-rows:auto minmax(0,1fr);column-gap:22px}
+  .rm-top,.rm-err{grid-column:1/-1}
+  .rm-dial{width:min(50vw,66vh)}
+  .rm-speed{font-size:min(21vw,31vh)}
+  .rm-power{width:100%}
+  .rm-bottom{grid-template-columns:1fr 1fr;align-content:center}
+}
+code{font-family:var(--f-mono);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+
+/* ===== uygulama kabuğu: üstte yapışkan başlık, telefonda altta ikonlu sekme çubuğu ===== */
+html{-webkit-text-size-adjust:100%}
+body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:25;background:var(--bg)}
+.ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ic.sm{width:14px;height:14px;stroke-width:2.1}
+.ic.lg{width:24px;height:24px}
+.label{display:flex;align-items:center;gap:5px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding-block:10px;margin-bottom:2px;flex-wrap:nowrap}
+.brand{flex-wrap:nowrap;align-items:center;min-width:0;gap:12px}
+.logo{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--surface);display:grid;place-items:center;flex:none}
+.brand-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.brand-t h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{display:flex;align-items:center;gap:8px;min-width:0}
+.sub .muted{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conn{flex-wrap:nowrap;flex:none}
+.btn{min-height:40px;touch-action:manipulation;user-select:none;-webkit-user-select:none;transition:transform .08s}
+.btn:active,.trip:active,nav.tabs button:active,.fab:active{transform:scale(.96)}
+h2{display:flex;align-items:center;gap:9px}
+.hic{width:30px;height:30px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.hic .ic{width:17px;height:17px}
+nav.tabs button{display:inline-flex;align-items:center;gap:7px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.wrap>section{animation:tabin .22s ease-out}
+@keyframes tabin{from{opacity:0;transform:translateY(8px)}}
+.cic{width:38px;height:38px;border-radius:11px;background:var(--surface-2);color:var(--fg-2);display:grid;place-items:center;flex:none}
+.ctl>div:first-child{display:flex;align-items:center;gap:12px;min-width:0}
+.trip{grid-template-columns:auto 1fr auto;align-items:center}
+.fab{display:none}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:500;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:90;max-width:calc(100vw - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:760px){
+  h1{font-size:19px}
+  .sub .muted{display:none}
+  .btn.icon-m{width:42px;height:42px;padding:0;justify-content:center;border-radius:50%}
+  .btn.icon-m .bt{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  #btnRide{display:none}
+  .wrap{padding-bottom:calc(164px + env(safe-area-inset-bottom,0px))}
+  .card{border-radius:16px}
+  nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;margin:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;overflow:visible;
+    background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);border-bottom:0;
+    padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px))}
+  nav.tabs button{flex-direction:column;gap:2px;padding:2px 0;font-size:10.5px;border-bottom:0;color:var(--muted);min-width:0}
+  nav.tabs button .ic{width:22px;height:22px;padding:4px 14px;box-sizing:content-box;border-radius:15px;transition:background .2s}
+  nav.tabs button[aria-selected="true"]{color:var(--accent);border-bottom:0;font-weight:600}
+  nav.tabs button[aria-selected="true"] .ic{background:var(--accent-soft)}
+  .fab{display:grid;place-items:center;position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:31;width:58px;height:58px;border-radius:20px;border:0;background:var(--accent);color:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.28);cursor:pointer;touch-action:manipulation;transition:transform .08s}
+}
+@media (prefers-reduced-motion:reduce){.wrap>section{animation:none}.btn,.fab,.toast{transition:none}}
+
+/* ===== marka katmanı: lacivert gösterge alanı, renkli ikon kutuları, gölgeli kartlar ===== */
+:root{--brand:#141C36;--brand-hi:#7FA2FF;--on-tile:#FFFFFF;
+  --t-orange:#F07F13;--t-amber:#DB9A0A;--t-green:#1FA35B;--t-teal:#0E9C9C;--t-blue:#2F6BFF;--t-indigo:#4B4ACF;--t-purple:#7A52E0;--t-pink:#D9418F;--t-red:#E0484E;--t-slate:#56657D;
+  --bg:#EDF0F5;--shadow:0 1px 2px rgba(16,24,40,.05),0 10px 26px -14px rgba(16,24,40,.22)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0A0E15;--shadow:0 0 0 1px var(--line)}}
+:root[data-theme="dark"]{--bg:#0A0E15;--shadow:0 0 0 1px var(--line)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-bolt"]){--tile:var(--t-orange)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-battery"]){--tile:var(--t-green)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-pin"]){--tile:var(--t-blue)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-wave"]){--tile:var(--t-purple)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-arrow"]){--tile:var(--t-teal)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-chip"]){--tile:var(--t-slate)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-thermo"]){--tile:var(--t-red)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-flag"]){--tile:var(--t-pink)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-road"]){--tile:var(--t-indigo)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-regen"]){--tile:var(--t-teal)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-gauge"]){--tile:var(--t-blue)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-rec"]){--tile:var(--t-red)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-heart"]){--tile:var(--t-pink)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-sliders"]){--tile:var(--t-purple)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-chart"]){--tile:var(--t-indigo)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-route"]){--tile:var(--t-blue)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-alert"]){--tile:var(--t-orange)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-info"]){--tile:var(--t-slate)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-bluetooth"]){--tile:var(--t-blue)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-code"]){--tile:var(--t-slate)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-lock"]){--tile:var(--t-slate)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-bulb"]){--tile:var(--t-amber)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-cruise"]){--tile:var(--t-teal)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-ruler"]){--tile:var(--t-indigo)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-clock"]){--tile:var(--t-purple)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-coin"]){--tile:var(--t-amber)}
+:is(.hic,.cic,.kpi .label .ic):has(use[href="#i-calendar"]){--tile:var(--t-red)}
+.card{border:0;box-shadow:var(--shadow);border-radius:20px}
+.logo{width:42px;height:42px;background:none;border-radius:0;display:block}
+h1{font-weight:500;letter-spacing:0} h1 b{font-weight:700;letter-spacing:.01em}
+.hic{background:var(--tile,var(--accent));color:var(--on-tile);width:32px;height:32px;border-radius:10px}
+.cic{background:var(--tile,var(--accent));color:var(--on-tile);border-radius:12px}
+.hero-card{--surface:#19213D;--surface-2:rgba(255,255,255,.11);--line:rgba(255,255,255,.2);--fg:#FFFFFF;--fg-2:#C5CDE2;--muted:#95A2C0;--accent:#8CA9FF;--accent-soft:rgba(140,169,255,.2);
+  background:radial-gradient(130% 100% at 100% 0%,#24305C 0%,var(--brand) 58%);color:var(--fg);box-shadow:0 14px 30px -16px rgba(20,28,54,.7);padding:20px}
+.hero-card #scooter{--surface-2:#2B3558}
+.hero-card .battbar{height:10px}
+.kpis-out{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.kpis-out .kpi{background:var(--surface);box-shadow:var(--shadow);border-radius:18px;padding:14px}
+.kpi{border-radius:14px;gap:8px;padding:12px}
+.kpi .label{text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--fg-2);gap:8px}
+.kpi .label .ic{width:15px;height:15px;padding:6px;box-sizing:content-box;border-radius:9px;background:var(--tile,var(--accent));color:var(--on-tile);stroke-width:2.2}
+.kpi .v{font-size:27px}
+.mring{right:12px;bottom:12px}
+.trip{border:0;background:var(--surface-2);border-radius:14px}
+.trip[aria-current="true"]{box-shadow:inset 0 0 0 2px var(--accent)}
+.pill{padding:3px 10px}
+nav.tabs button[aria-selected="true"]{font-weight:600}
+@media (max-width:760px){
+  .hero-card{padding:16px}
+  .kpis-out{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  nav.tabs button[aria-selected="true"] .ic{background:var(--accent);color:var(--surface)}
+  .fab{width:auto;height:54px;padding:0 20px 0 16px;gap:9px;border-radius:27px;background:var(--brand);color:var(--on-tile);font-weight:600;font-size:14px;display:inline-flex;align-items:center;box-shadow:0 10px 24px -8px rgba(10,14,30,.6),0 0 0 1px rgba(255,255,255,.08)}
+}
+
+/* ===== harita ===== */
+.leaflet-image-layer,.leaflet-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane,.leaflet-pane>canvas,.leaflet-pane>svg,.leaflet-tile,.leaflet-tile-container,.leaflet-zoom-box{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden}.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile::selection{background:0 0}.leaflet-safari .leaflet-tile{image-rendering:-webkit-optimize-contrast}.leaflet-safari .leaflet-tile-container{width:1600px;height:1600px;-webkit-transform-origin:0 0}.leaflet-marker-icon,.leaflet-marker-shadow{display:block}.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,.leaflet-container .leaflet-tile,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer{max-width:none!important;max-height:none!important;width:auto;padding:0}.leaflet-container img.leaflet-tile{mix-blend-mode:plus-lighter}.leaflet-container.leaflet-touch-zoom{-ms-touch-action:pan-x pan-y;touch-action:pan-x pan-y}.leaflet-container.leaflet-touch-drag{-ms-touch-action:pinch-zoom;touch-action:none;touch-action:pinch-zoom}.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{-ms-touch-action:none;touch-action:none}.leaflet-container{-webkit-tap-highlight-color:transparent}.leaflet-container a{-webkit-tap-highlight-color:rgba(51,181,229,.4)}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}.leaflet-zoom-box{width:0;height:0;-moz-box-sizing:border-box;box-sizing:border-box;z-index:800}.leaflet-overlay-pane svg{-moz-user-select:none}.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}.leaflet-map-pane canvas{z-index:100}.leaflet-map-pane svg{z-index:200}.leaflet-vml-shape{width:1px;height:1px}.leaflet-control{position:relative;z-index:800;pointer-events:visiblePainted;pointer-events:auto}.leaflet-bottom,.leaflet-top{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-control{float:left;clear:both}.leaflet-right .leaflet-control{float:right}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}.leaflet-fade-anim .leaflet-popup{opacity:0;-webkit-transition:opacity .2s linear;-moz-transition:opacity .2s linear;transition:opacity .2s linear}.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}.leaflet-zoom-animated{-webkit-transform-origin:0 0;-ms-transform-origin:0 0;transform-origin:0 0}svg.leaflet-zoom-animated{will-change:transform}.leaflet-zoom-anim .leaflet-zoom-animated{-webkit-transition:-webkit-transform .25s cubic-bezier(0,0,.25,1);-moz-transition:-moz-transform .25s cubic-bezier(0,0,.25,1);transition:transform .25s cubic-bezier(0,0,.25,1)}.leaflet-pan-anim .leaflet-tile,.leaflet-zoom-anim .leaflet-tile{-webkit-transition:none;-moz-transition:none;transition:none}.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:-webkit-grab;cursor:-moz-grab;cursor:grab}.leaflet-crosshair,.leaflet-crosshair .leaflet-interactive{cursor:crosshair}.leaflet-control,.leaflet-popup-pane{cursor:auto}.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive,.leaflet-dragging .leaflet-marker-draggable{cursor:move;cursor:-webkit-grabbing;cursor:-moz-grabbing;cursor:grabbing}.leaflet-image-layer,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}.leaflet-image-layer.leaflet-interactive,.leaflet-marker-icon.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive,svg.leaflet-image-layer.leaflet-interactive path{pointer-events:visiblePainted;pointer-events:auto}.leaflet-container{background:#ddd;outline-offset:1px}.leaflet-container a{color:#0078a8}.leaflet-zoom-box{border:2px dotted #38f;background:rgba(255,255,255,.5)}.leaflet-container{font-family:"Helvetica Neue",Arial,Helvetica,sans-serif;font-size:12px;font-size:.75rem;line-height:1.5}.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.65);border-radius:4px}.leaflet-bar a{background-color:#fff;border-bottom:1px solid #ccc;width:26px;height:26px;line-height:26px;display:block;text-align:center;text-decoration:none;color:#000}.leaflet-bar a,.leaflet-control-layers-toggle{background-position:50% 50%;background-repeat:no-repeat;display:block}.leaflet-bar a:focus,.leaflet-bar a:hover{background-color:#f4f4f4}.leaflet-bar a:first-child{border-top-left-radius:4px;border-top-right-radius:4px}.leaflet-bar a:last-child{border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-bottom:none}.leaflet-bar a.leaflet-disabled{cursor:default;background-color:#f4f4f4;color:#bbb}.leaflet-touch .leaflet-bar a{width:30px;height:30px;line-height:30px}.leaflet-touch .leaflet-bar a:first-child{border-top-left-radius:2px;border-top-right-radius:2px}.leaflet-touch .leaflet-bar a:last-child{border-bottom-left-radius:2px;border-bottom-right-radius:2px}.leaflet-control-zoom-in,.leaflet-control-zoom-out{font:bold 18px 'Lucida Console',Monaco,monospace;text-indent:1px}.leaflet-touch .leaflet-control-zoom-in,.leaflet-touch .leaflet-control-zoom-out{font-size:22px}.leaflet-control-layers{box-shadow:0 1px 5px rgba(0,0,0,.4);background:#fff;border-radius:5px}.leaflet-touch .leaflet-control-layers-toggle{width:44px;height:44px}.leaflet-control-layers .leaflet-control-layers-list,.leaflet-control-layers-expanded .leaflet-control-layers-toggle{display:none}.leaflet-control-layers-expanded .leaflet-control-layers-list{display:block;position:relative}.leaflet-control-layers-expanded{padding:6px 10px 6px 6px;color:#333;background:#fff}.leaflet-control-layers-scrollbar{overflow-y:scroll;overflow-x:hidden;padding-right:5px}.leaflet-control-layers-selector{margin-top:2px;position:relative;top:1px}.leaflet-control-layers label{display:block;font-size:13px;font-size:1.08333em}.leaflet-control-layers-separator{height:0;border-top:1px solid #ddd;margin:5px -10px 5px -6px}.leaflet-container .leaflet-control-attribution{background:#fff;background:rgba(255,255,255,.8);margin:0}.leaflet-control-attribution,.leaflet-control-scale-line{padding:0 5px;color:#333;line-height:1.4}.leaflet-control-attribution a{text-decoration:none}.leaflet-control-attribution a:focus,.leaflet-control-attribution a:hover{text-decoration:underline}.leaflet-attribution-flag{display:inline!important;vertical-align:baseline!important;width:1em;height:.6669em}.leaflet-left .leaflet-control-scale{margin-left:5px}.leaflet-bottom .leaflet-control-scale{margin-bottom:5px}.leaflet-control-scale-line{border:2px solid #777;border-top:none;line-height:1.1;padding:2px 5px 1px;white-space:nowrap;-moz-box-sizing:border-box;box-sizing:border-box;background:rgba(255,255,255,.8);text-shadow:1px 1px #fff}.leaflet-control-scale-line:not(:first-child){border-top:2px solid #777;border-bottom:none;margin-top:-2px}.leaflet-control-scale-line:not(:first-child):not(:last-child){border-bottom:2px solid #777}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-attribution,.leaflet-touch .leaflet-control-layers{box-shadow:none}.leaflet-touch .leaflet-bar,.leaflet-touch .leaflet-control-layers{border:2px solid rgba(0,0,0,.2);background-clip:padding-box}.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:12px}.leaflet-popup-content{margin:13px 24px 13px 20px;line-height:1.3;font-size:13px;font-size:1.08333em;min-height:1px}.leaflet-popup-content p{margin:17px 0;margin:1.3em 0}.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;pointer-events:auto;-webkit-transform:rotate(45deg);-moz-transform:rotate(45deg);-ms-transform:rotate(45deg);transform:rotate(45deg)}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#fff;color:#333;box-shadow:0 3px 14px rgba(0,0,0,.4)}.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:24px;height:24px;font:16px/24px Tahoma,Verdana,sans-serif;color:#757575;text-decoration:none;background:0 0}.leaflet-container a.leaflet-popup-close-button:focus,.leaflet-container a.leaflet-popup-close-button:hover{color:#585858}.leaflet-popup-scrolled{overflow:auto}.leaflet-oldie .leaflet-popup-content-wrapper{-ms-zoom:1}.leaflet-oldie .leaflet-popup-tip{width:24px;margin:0 auto}.leaflet-oldie .leaflet-control-layers,.leaflet-oldie .leaflet-control-zoom,.leaflet-oldie .leaflet-popup-content-wrapper,.leaflet-oldie .leaflet-popup-tip{border:1px solid #999}.leaflet-div-icon{background:#fff;border:1px solid #666}.leaflet-tooltip{position:absolute;padding:6px;background-color:#fff;border:1px solid #fff;border-radius:3px;color:#222;white-space:nowrap;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.4)}.leaflet-tooltip.leaflet-interactive{cursor:pointer;pointer-events:auto}.leaflet-tooltip-bottom:before,.leaflet-tooltip-left:before,.leaflet-tooltip-right:before,.leaflet-tooltip-top:before{position:absolute;pointer-events:none;border:6px solid transparent;background:0 0;content:""}.leaflet-tooltip-bottom{margin-top:6px}.leaflet-tooltip-top{margin-top:-6px}.leaflet-tooltip-bottom:before,.leaflet-tooltip-top:before{left:50%;margin-left:-6px}.leaflet-tooltip-top:before{bottom:0;margin-bottom:-12px;border-top-color:#fff}.leaflet-tooltip-bottom:before{top:0;margin-top:-12px;margin-left:-6px;border-bottom-color:#fff}.leaflet-tooltip-left{margin-left:-6px}.leaflet-tooltip-right{margin-left:6px}.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{top:50%;margin-top:-6px}.leaflet-tooltip-left:before{right:0;margin-right:-12px;border-left-color:#fff}.leaflet-tooltip-right:before{left:0;margin-left:-12px;border-right-color:#fff}@media print{.leaflet-control{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+:root{--map-filter:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--map-filter:invert(1) hue-rotate(180deg) brightness(.95) contrast(.88)}}
+:root[data-theme="dark"]{--map-filter:invert(1) hue-rotate(180deg) brightness(.95) contrast(.88)}
+.map{position:relative;z-index:0;isolation:isolate;width:100%;height:320px;border-radius:14px;overflow:hidden;background:var(--surface-2)}
+.map.trip-map{height:auto;aspect-ratio:16/10}
+.leaflet-container{font-family:var(--f-body);background:var(--surface-2)}
+.leaflet-tile-pane{filter:var(--map-filter)}
+.park{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--surface-2);border-radius:14px;padding:12px}
+.park .pt{flex:1 1 200px;min-width:0}
+a.btn{text-decoration:none}
+
+/* ===== orijinal uygulamadan gelen bölümler ===== */
+.hero-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hero-nm{display:inline-flex;align-items:center;gap:8px;border:0;background:none;color:var(--fg);font-family:var(--f-display);font-size:20px;font-weight:600;padding:2px 0;cursor:pointer;min-width:0}
+.hero-nm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-nm .ic{color:var(--muted)}
+.hero-bt{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);background:var(--surface-2);padding:5px 10px;border-radius:999px;white-space:nowrap}
+.hero-bt.on{color:#7BE3A9}
+.devhead{display:grid;gap:8px}
+.devname-row{display:flex;align-items:center;gap:8px;min-width:0}
+.devname{font-family:var(--f-display);font-size:26px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn.icon-s{width:34px;height:34px;min-height:34px;padding:0;justify-content:center;border-radius:50%}
+.kpi .v .btn.icon-s{width:28px;height:28px;min-height:28px;margin-left:6px;vertical-align:middle}
+.kpi .v.sm{font-size:17px;word-break:break-all;white-space:normal}
+.ctl{flex-wrap:wrap}
+.ctl>div:first-child{flex:1 1 210px}
+.ctl .seg{margin-left:auto}
+input[type=date]{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-scooter" viewBox="0 0 24 24"><circle cx="5.5" cy="18" r="2.5"/><circle cx="18.5" cy="18" r="2.5"/><path d="M8 18h8M18.5 18 16 5h-3.5"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4.2 18a9 9 0 1 1 15.6 0"/><path d="m12 14 4-5"/><circle cx="12" cy="14" r="1.2"/></symbol><symbol id="i-battery" viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 10.5v3M6 10.5v3M9.5 10.5v3M13 10.5v3"/></symbol><symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.2" r=".5"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/></symbol><symbol id="i-bluetooth" viewBox="0 0 24 24"><path d="m7 7 10 10-5 4V3l5 4L7 17"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol><symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></symbol><symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 5 13.5h6L10 22l9-12h-6z"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol><symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12c3-8 6-8 9 0s6 8 9 0"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></symbol><symbol id="i-thermo" viewBox="0 0 24 24"><path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M12 9v7"/></symbol><symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol><symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h12l-2.5 4 2.5 4H5"/></symbol><symbol id="i-road" viewBox="0 0 24 24"><path d="M5 21 9 3M19 21 15 3M12 5v2M12 11v2M12 17v2"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21h3M8.5 14.5a6 6 0 1 1 7 0c-.6.5-1 1.2-1 2h-5c0-.8-.4-1.5-1-2z"/></symbol><symbol id="i-cruise" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m12 13 4.5-4M8 17h8"/></symbol><symbol id="i-regen" viewBox="0 0 24 24"><path d="M4 11a8 8 0 0 1 14-4.3L20 9M20 4v5h-5M20 13a8 8 0 0 1-14 4.3L4 15M4 20v-5h5"/></symbol><symbol id="i-ruler" viewBox="0 0 24 24"><rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M6.5 8v3M10 8v4M14 8v3M17.5 8v4"/></symbol><symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"/></symbol><symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 8h5M12 8v8.5M9.5 12h5"/></symbol><symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".5"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 3 10.5l7 2.5 2.5 7z"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol><symbol id="i-link" viewBox="0 0 24 24"><path d="m9 15 6-6M10.5 6.5l1-1a4.2 4.2 0 0 1 6 6l-1 1M13.5 17.5l-1 1a4.2 4.2 0 0 1-6-6l1-1"/></symbol><symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20h18M6 20v-8M11 20V5M16 20v-6"/></symbol><symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol><symbol id="i-park" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="4"/><path d="M10 17V7.5h3.2a3 3 0 0 1 0 6H10"/></symbol><symbol id="i-walk" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="1.8"/><path d="m9 21 2.5-7-2-2.5 1-4.5 3.5 1 2 3.5 3 1M10.5 7 7 9l-1 3.5M13 14l2.5 3 .5 4"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol><symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5.5c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5V6z"/><path d="M12 9v4"/><circle cx="12" cy="16" r=".5"/></symbol><symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 9.5a4.3 4.3 0 0 1-1 8.5z"/></symbol></defs></svg>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="14" style="fill:var(--brand)"/><path d="M10.5 30a14.5 14.5 0 0 1 27.6-6" fill="none" style="stroke:var(--brand-hi)" stroke-width="3" stroke-linecap="round"/><g fill="none" style="stroke:var(--on-tile)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="15" cy="33" r="4"/><circle cx="34" cy="33" r="4"/><path d="M19 33h11M34 33l-3.2-18h-5"/></g></svg>
+      <div class="brand-t">
+        <h1><b>D38E</b> Sürüş Panosu</h1>
+        <div class="sub"><span id="connPill" class="pill demo"><span class="dot"></span><span id="connText">Demo verisi</span></span><span class="muted small">Ninebot KickScooter · 36 V · 367 Wh</span></div>
+      </div>
+    </div>
+    <div class="conn">
+      <button class="btn icon-m" id="btnRide" type="button"><svg class="ic" aria-hidden="true"><use href="#i-expand"/></svg><span class="bt">Sürüş modu</span></button>
+      <button class="btn icon-m" id="btnDemo" type="button"><svg class="ic" aria-hidden="true"><use id="demoUse" href="#i-stop"/></svg><span class="bt" id="btnDemoTxt">Demoyu durdur</span></button>
+      <button class="btn primary icon-m" id="btnConnect" type="button"><svg class="ic" aria-hidden="true"><use href="#i-bluetooth"/></svg><span class="bt" id="btnConnectTxt">Scooter'a bağlan</span></button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="panel" aria-selected="true"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg><span>Panel</span></button>
+    <button role="tab" data-tab="batarya"><svg class="ic" aria-hidden="true"><use href="#i-battery"/></svg><span>Batarya</span></button>
+    <button role="tab" data-tab="suruslar"><svg class="ic" aria-hidden="true"><use href="#i-route"/></svg><span>Sürüşler</span></button>
+    <button role="tab" data-tab="ariza"><svg class="ic" aria-hidden="true"><use href="#i-scooter"/></svg><span>Cihaz</span></button>
+    <button role="tab" data-tab="kontrol"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg><span>Kontrol</span></button>
+    <button role="tab" data-tab="gelistirici"><svg class="ic" aria-hidden="true"><use href="#i-code"/></svg><span>Araçlar</span></button>
+  </nav>
+
+  <!-- PANEL -->
+  <section id="tab-panel" class="grid">
+    <div id="errBanner" class="banner crit" hidden><span class="ico">!</span><div id="errBannerText"></div></div>
+    <div class="card hero-card">
+      <div class="hero-top"><button class="hero-nm" id="heroName" type="button" title="Adı değiştir"><span id="heroNameTxt">Scooter</span><svg class="ic sm" aria-hidden="true"><use href="#i-edit"/></svg></button><span class="hero-bt" id="heroBt"><svg class="ic sm" aria-hidden="true"><use href="#i-bluetooth"/></svg><span id="heroBtTxt">Demo</span></span></div>
+      <div class="hero">
+        <div class="gauge">
+          <svg viewBox="0 0 200 164" aria-hidden="true">
+            <path id="gTrack" fill="none" stroke="var(--surface-2)" stroke-width="12" stroke-linecap="round"/>
+            <path id="gVal" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round"/>
+            <g id="gTicks"></g>
+          </svg>
+          <div class="read">
+            <div class="speed num" id="vSpeed">0</div>
+            <div class="muted">km/s</div>
+          </div>
+        </div>
+        <div class="hero-art"><svg id="scooter" viewBox="0 0 400 212" role="img" aria-label="Scooter'ın canlı durumu: batarya, enerji akışı, kontrolcü ve motor"></svg></div>
+      </div>
+      <div>
+        <div class="card-h"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-battery"/></svg>Batarya</span><span class="num fg2" id="vBattTxt">–</span></div>
+        <div class="battbar" style="margin-top:6px"><div id="vBattBar" style="width:0%"></div></div>
+      </div>
+    </div>
+      <div class="kpis kpis-out">
+        <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-bolt"/></svg>Güç</span><span class="v" id="vPower">–</span><svg class="mring" id="rPower" viewBox="0 0 30 30" aria-hidden="true"></svg></div>
+        <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-pin"/></svg>Kalan menzil</span><span class="v" id="vRange">–</span><svg class="mring" id="rRange" viewBox="0 0 30 30" aria-hidden="true"></svg></div>
+        <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-wave"/></svg>Voltaj</span><span class="v" id="vVolt">–</span></div>
+        <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-arrow"/></svg>Akım</span><span class="v" id="vCurr">–</span></div>
+        <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-chip"/></svg>Kontrolcü</span><span class="v" id="vTctl">–</span><svg class="mring" id="rCtl" viewBox="0 0 30 30" aria-hidden="true"></svg></div>
+        <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-thermo"/></svg>Batarya ısısı</span><span class="v" id="vTbat">–</span><svg class="mring" id="rBat" viewBox="0 0 30 30" aria-hidden="true"></svg></div>
+        <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-flag"/></svg>Bu sürüş</span><span class="v" id="vTrip">–</span></div>
+        <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-road"/></svg>Toplam km</span><span class="v" id="vOdo">–</span></div>
+      </div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg></span>Hız</h2><span class="muted small">son 2 dakika · km/s</span></div>
+        <div class="chart" id="chSpeed"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-bolt"/></svg></span>Güç</h2><span class="muted small">son 2 dakika · W (eksi = geri kazanım)</span></div>
+        <div class="chart" id="chPower"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-map"/></svg></span>Konum</h2><span class="muted small" id="locInfo">Demo konumu</span></div>
+      <div id="liveMap" class="map" hidden></div>
+      <svg class="route" id="liveSvg" viewBox="0 0 320 200" role="img" aria-label="Son konum izi"></svg>
+      <div class="small muted" id="mapNote">Sokak haritası bu önizlemede kapalı. Sayfayı kendi adresinizde açınca gerçek harita görünür. Şimdilik son konum izi çiziliyor.</div>
+      <div class="row">
+        <button class="btn" id="btnGeo" type="button"><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg><span id="btnGeoTxt">Telefon konumunu kullan</span></button>
+        <button class="btn" id="btnCenter" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>Ortala</button>
+        <button class="btn" id="btnRangeFit" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-gauge"/></svg>Menzili göster</button>
+      </div>
+      <div class="park">
+        <span class="cic"><svg class="ic" aria-hidden="true"><use href="#i-park"/></svg></span>
+        <div class="pt"><b>Scooter'ım nerede?</b><div class="small muted" id="parkTxt">Henüz park yeri kaydedilmedi. Bluetooth bağlantısı koptuğunda otomatik kaydedilir, isterseniz düğmeyle siz kaydedin.</div></div>
+        <button class="btn" id="btnPark" type="button"><svg class="ic" aria-hidden="true"><use href="#i-park"/></svg>Buraya park ettim</button>
+        <a class="btn primary" id="parkNav" target="_blank" rel="noopener" href="#" hidden><svg class="ic" aria-hidden="true"><use href="#i-walk"/></svg>Yol tarifi (Google Maps)</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-rec"/></svg></span>Sürüş kaydı</h2>
+        <div class="reclive" id="recLive" hidden><span class="recdot"></span><span class="num" id="recInfo">0:00</span></div>
+      </div>
+      <p class="fg2" style="margin:0">Kaydı başlattığınızda hız, güç, batarya ve telefonun GPS konumu her saniye kaydedilir. Kayıt sırasında sayfa açık ve ekran açık kalmalı.</p>
+      <div class="row">
+        <button class="btn primary" id="btnRec" type="button"><svg class="ic" aria-hidden="true"><use id="recUse" href="#i-rec"/></svg><span id="btnRecTxt">Kaydı başlat</span></button>
+        <span class="muted small" id="gpsInfo"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- BATARYA -->
+  <section id="tab-batarya" class="grid" hidden>
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-heart"/></svg></span>Batarya sağlığı</h2><span id="healthPill" class="pill ok">İyi</span></div>
+        <div class="row" style="gap:16px;align-items:center;flex-wrap:nowrap">
+          <svg id="bHealthRing" viewBox="0 0 100 100" width="104" height="104" style="flex:none" role="img" aria-label="Batarya sağlığı"></svg>
+          <div class="kpis" style="flex:1;min-width:0">
+            <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-regen"/></svg>Şarj döngüsü</span><span class="v" id="bCycles">–</span></div>
+            <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-battery"/></svg>Tam kapasite</span><span class="v" id="bFull">–</span></div>
+            <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-bolt"/></svg>Kalan</span><span class="v" id="bRemain">–</span></div>
+            <div class="kpi" hidden><span class="v" id="bHealth">–</span></div>
+          </div>
+        </div>
+        <p class="small muted" style="margin:0">Sağlık, bataryanın bugün tutabildiği kapasitenin fabrika kapasitesine oranıdır. %80'in altı belirgin yıpranma demektir.</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></span>Hücre dengesi</h2><span id="cellPill" class="pill ok">Dengeli</span></div>
+        <div class="kpis">
+          <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-arrow"/></svg>En düşük</span><span class="v" id="cMin">–</span></div>
+          <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-arrow"/></svg>En yüksek</span><span class="v" id="cMax">–</span></div>
+          <div class="kpi"><span class="label"><svg class="ic sm" aria-hidden="true"><use href="#i-sliders"/></svg>Fark</span><span class="v" id="cDelta">–</span></div>
+        </div>
+        <p class="small muted" style="margin:0">Batarya 10 hücrenin seri bağlanmasından oluşur. Hücreler arası fark 30 mV'u geçerse zayıf hücre olabilir, 80 mV üstü servise götürme sebebidir.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-battery"/></svg></span>Batarya paketi</h2><span class="muted small">10 hücre seri · her hücrenin doluluğu 3,0–4,2 V aralığına göre</span></div>
+      <div class="pack" id="pack"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-wave"/></svg></span>Hücre voltajları</h2><span class="muted small">mV · 10S paket</span></div>
+      <div class="chart" id="chCells"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-battery"/></svg></span>Batarya seviyesi</h2><span class="muted small">son 2 dakika · %</span></div>
+      <div class="chart" id="chBatt"></div>
+    </div>
+  </section>
+
+  <!-- SURUSLER -->
+  <section id="tab-suruslar" class="grid" hidden>
+    <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg></span>Özet</h2>
+        <label class="row small muted">Elektrik fiyatı
+          <input type="number" id="kwhPrice" step="0.1" min="0" value="3.0" style="width:80px"> TL/kWh
+        </label>
+      </div>
+      <div class="kpis" id="statKpis"></div>
+      <div class="card-h"><h3>Günlük mesafe</h3><span class="muted small">son 14 gün · km</span></div>
+      <div class="chart" id="chDaily"></div>
+      <div class="card-h"><h3>Sürüş takvimi</h3>
+        <span class="muted small">son 16 hafta · az <span class="ramp-sq" id="heatLegend"></span> çok</span></div>
+      <div class="heat" id="heat"></div>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-route"/></svg></span>Sürüşler</h2><button class="btn" id="btnCsvAll" type="button"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Tümünü CSV kopyala</button></div>
+        <div class="grid" id="tripList" style="gap:8px"></div>
+      </div>
+      <div class="card" id="tripDetail">
+        <div class="card-h"><h2 id="tdTitle">Sürüş detayı</h2><span id="tdTag"></span></div>
+        <div class="kpis" id="tdKpis"></div>
+        <div>
+          <div id="tdMap" class="map trip-map" hidden></div>
+          <svg class="route" id="tdRoute" viewBox="0 0 320 200" role="img" aria-label="Sürüş rotası"></svg>
+          <div class="row" style="justify-content:space-between;margin-top:6px">
+            <div class="legend-ramp">yavaş <span class="ramp"></span> hızlı</div>
+            <a id="tdOsm" class="small" target="_blank" rel="noopener" href="#">Başlangıcı Google Maps'te aç</a>
+          </div>
+        </div>
+        <div class="card-h"><h3>Hız</h3><span class="muted small">km/s</span></div>
+        <div class="chart" id="chTripSpeed"></div>
+        <div class="card-h"><h3>Güç</h3><span class="muted small">W</span></div>
+        <div class="chart" id="chTripPower"></div>
+        <div class="card-h"><h3>Hız dağılımı</h3><span class="muted small">her hız aralığında geçen süre · dakika</span></div>
+        <div class="chart" id="chTripHist"></div>
+        <div class="row">
+          <button class="btn" id="btnCsvOne" type="button"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Bu sürüşü CSV kopyala</button>
+          <button class="btn danger" id="btnDelTrip" type="button">Sil</button>
+          <span class="small muted" id="tdMsg"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARIZA -->
+  <section id="tab-ariza" class="grid" hidden>
+    <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg></span>Temel bilgi</h2></div>
+      <div class="devhead">
+        <div class="devname-row"><b class="devname" id="devName">Scooter</b><button class="btn icon-s" id="btnRename" type="button" aria-label="Adı değiştir"><svg class="ic sm" aria-hidden="true"><use href="#i-edit"/></svg></button></div>
+        <div class="row" id="renameRow" hidden><input type="text" id="nameIn" maxlength="24" class="grow" aria-label="Scooter adı"><button class="btn primary" id="btnNameSave" type="button">Kaydet</button><button class="btn" id="btnNameCancel" type="button">Vazgeç</button></div>
+        <div class="muted" id="ownDays">Satın alma tarihini girerseniz kaç gündür sizinle olduğu burada görünür.</div>
+        <label class="row small muted" style="flex-wrap:wrap">Satın alma tarihi <input type="date" id="buyDate"></label>
+      </div>
+      <div class="kpis" id="devKpis"></div>
+      <div class="tscroll"><table><tbody id="devInfo"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-alert"/></svg></span>Durum</h2><span id="errPill" class="pill ok">Hata yok</span></div>
+      <div id="errNow" class="fg2">Scooter şu an hata bildirmiyor.</div>
+      <div class="row">
+        <button class="btn" id="btnSimErr" type="button"><svg class="ic" aria-hidden="true"><use href="#i-alert"/></svg>Demo: rastgele hata oluştur</button>
+        <button class="btn" id="btnClrErr" type="button"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg>Demo: hatayı temizle</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-cloud"/></svg></span>Segway uygulamasında kalanlar</h2></div>
+      <div class="small fg2">Bu işlemler Segway hesabınıza ve sunucularına bağlı olduğu için burada yok. Bunlar için Segway uygulamasını kullanın:</div>
+      <ul class="small fg2" style="margin:0;padding-left:18px;display:grid;gap:4px">
+        <li><b>Yazılım güncellemesi:</b> Güncelleme dosyaları Segway'in sunucusundan gelir. Yarıda kalan bir güncelleme scooter'ı çalışmaz hale getirebilir.</li>
+        <li><b>Aracın bağını çözmek:</b> Scooter'ın hesabınızla eşleşmesi Segway'in sunucusunda tutulur.</li>
+        <li><b>Diğer kullanıcıların bağlanması:</b> Hesaplar arası paylaşım da sunucu tarafında.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-alert"/></svg></span>Hata kodları</h2><span class="muted small">Ninebot ES / Max serisi kaynaklı, D serisinde farklılık olabilir</span></div>
+      <div class="tscroll"><table>
+        <thead><tr><th>Kod</th><th>Anlamı</th><th>Ne yapılmalı</th></tr></thead>
+        <tbody id="errTable"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- KONTROL -->
+  <section id="tab-kontrol" class="grid" hidden>
+    <div class="banner warn" id="ctlWarn"><span class="ico">!</span><div><b>Deneysel.</b> Demo modunda düğmeler sadece ekrandaki değeri değiştirir. Gerçek bağlantıda komut göndermek için aşağıdaki onay kutusunu işaretlemeniz gerekir. Komut adresleri ES/Max serisinden alınmıştır, D38E'de doğrulanmadı.</div></div>
+    <div class="card">
+      <label class="row"><input type="checkbox" id="ctlArm"> Gerçek scooter'a deneysel komut göndermeye izin ver</label>
+      <h3 style="margin-top:6px">Genel ayarlar</h3>
+      <div>
+        <div class="ctl"><div><span class="cic"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg></span><div><b>Koruma modu</b><div class="small muted">Açıkken motor çalışmaz, scooter itilirse alarm verir</div></div></div><label class="switch"><input type="checkbox" id="cLock" aria-label="Koruma modu"><span></span></label></div>
+        <div class="ctl"><div><span class="cic"><svg class="ic" aria-hidden="true"><use href="#i-regen"/></svg></span><div><b>Rejeneratif güç geri kazanımı</b><div class="small muted">Gazı bırakınca motorun frenleme gücü ve bataryaya geri verilen enerji</div></div></div><div class="seg" id="cKers"><button type="button" data-v="0">Zayıf</button><button type="button" data-v="1">Orta</button><button type="button" data-v="2">Güçlü</button></div></div>
+        <div class="ctl"><div><span class="cic"><svg class="ic" aria-hidden="true"><use href="#i-walk"/></svg></span><div><b>Yürüyüş modu</b><div class="small muted">Scooter'ı yanında yürüterek iterken azami hız 5 km/s</div></div></div><label class="switch"><input type="checkbox" id="cWalk" aria-label="Yürüyüş modu"><span></span></label></div>
+        <div class="ctl"><div><span class="cic"><svg class="ic" aria-hidden="true"><use href="#i-ruler"/></svg></span><div><b>Ölçü sistemi</b><div class="small muted">Metrik (km) veya İngiliz (mil). Sadece bu uygulamadaki gösterimi değiştirir</div></div></div><div class="seg" id="cUnit"><button type="button" data-v="km">Metrik</button><button type="button" data-v="mi">İngiliz</button></div></div>
+      </div>
+      <h3 style="margin-top:6px">Ek ayarlar</h3>
+      <div>
+        <div class="ctl"><div><span class="cic"><svg class="ic" aria-hidden="true"><use href="#i-bulb"/></svg></span><div><b>Arka lamba sürekli açık</b><div class="small muted">Kapalıysa sadece frende yanar</div></div></div><label class="switch"><input type="checkbox" id="cLight" aria-label="Arka lamba"><span></span></label></div>
+        <div class="ctl"><div><span class="cic"><svg class="ic" aria-hidden="true"><use href="#i-cruise"/></svg></span><div><b>Cruise control</b><div class="small muted">Sabit hızda 5 saniye tutunca hızı sabitler</div></div></div><label class="switch"><input type="checkbox" id="cCruise" aria-label="Cruise control"><span></span></label></div>
+      </div>
+      <div class="small muted" id="ctlMsg"></div>
+    </div>
+  </section>
+
+  <!-- GELISTIRICI -->
+  <section id="tab-gelistirici" class="grid" hidden>
+    <div class="banner info" id="btSupport"><span class="ico">i</span><div id="btSupportText"></div></div>
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-bluetooth"/></svg></span>Bağlantı</h2><span id="protoPill" class="pill idle">Protokol bilinmiyor</span></div>
+        <div class="tscroll"><table><tbody>
+          <tr><td class="muted">Cihaz</td><td id="dvName">–</td></tr>
+          <tr><td class="muted">Durum</td><td id="dvState">Bağlı değil</td></tr>
+          <tr><td class="muted">Alınan paket</td><td id="dvRx" class="num">0</td></tr>
+          <tr><td class="muted">Çözülen Ninebot çerçevesi</td><td id="dvFrames" class="num">0</td></tr>
+        </tbody></table></div>
+        <label class="row"><input type="checkbox" id="pollOn" checked> Bağlanınca Ninebot okuma isteklerini otomatik gönder</label>
+        <div class="row"><button class="btn" id="btnDisconnect" type="button" disabled><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg>Bağlantıyı kes</button></div>
+        <h3>Servisler</h3>
+        <div id="svcList" class="grid" style="gap:6px"><span class="muted small">Bağlandığınızda scooter'ın Bluetooth servisleri burada listelenir.</span></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-code"/></svg></span>Ham veri</h2>
+          <div class="row"><button class="btn" id="btnCopyLog" type="button"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg>Kopyala</button><button class="btn" id="btnClearLog" type="button"><svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>Temizle</button></div>
+        </div>
+        <div class="log" id="log" aria-live="polite"></div>
+        <div class="row">
+          <input type="text" class="grow mono" id="hexIn" placeholder="5A A5 01 3E 20 01 B0 20 ..." aria-label="Gönderilecek hex">
+          <button class="btn" id="btnSendHex" type="button"><svg class="ic" aria-hidden="true"><use href="#i-send"/></svg>Gönder</button>
+          <button class="btn" id="btnAddCs" type="button" title="Girdiğiniz gövdeye 5A A5 ve sağlama toplamı ekler">Ninebot paketi yap</button>
+        </div>
+        <p class="small muted" style="margin:0">"Ninebot paketi yap" için uzunluk, kaynak, hedef, komut, adres ve veriyi yazın (ör. <code>01 3E 20 01 B0 20</code>). Başlık ve sağlama toplamı eklenir.</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg></span>İlk bağlantıda ne yapmalı?</h2>
+      <ol class="steps">
+        <li>Segway uygulamasını tamamen kapatın. Scooter aynı anda tek bağlantı kabul eder.</li>
+        <li>Scooter'ı açın, "Scooter'a bağlan"a basın, listeden scooter'ı seçin.</li>
+        <li>Ham veri kutusuna bakın. Gelen satırlar <code>5A A5</code> ile başlıyorsa protokol şifresiz, panel kendiliğinden dolmaya başlar.</li>
+        <li>Satırlar rastgele görünüyorsa trafik şifreli. "Kopyala" ile log'u alıp Claude'a getirin, bir sonraki adımı birlikte planlarız.</li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<button class="fab" id="fabRide" type="button" aria-label="Sürüş modunu aç"><svg class="ic lg" aria-hidden="true"><use href="#i-expand"/></svg><span>Sürüş modu</span></button>
+<div class="toast" id="toast" role="status"></div>
+
+<div id="ride" hidden role="dialog" aria-modal="true" aria-label="Sürüş modu">
+  <canvas id="rideFx" aria-hidden="true"></canvas>
+  <div class="rm-top">
+    <span class="rm-chip" id="rmConn">Demo verisi</span>
+    <span class="rm-clock num" id="rmClock">--:--</span>
+    <button class="rm-x" id="rmClose" type="button" aria-label="Sürüş modunu kapat">✕</button>
+  </div>
+  <div class="rm-err" id="rmErr" hidden></div>
+  <div class="rm-main">
+    <div class="rm-dial">
+      <svg viewBox="0 0 300 300" aria-hidden="true">
+        <defs><linearGradient id="rmGrad" x1="0" y1="1" x2="1" y2="0"><stop offset="0" style="stop-color:var(--rm-accent)"/><stop offset="1" style="stop-color:var(--rm-accent2)"/></linearGradient></defs>
+        <path id="rmTrack" fill="none" style="stroke:var(--rm-track)" stroke-width="16" stroke-linecap="round"/>
+        <path id="rmArc" fill="none" stroke="url(#rmGrad)" stroke-width="16" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
+        <g id="rmTicks"></g>
+      </svg>
+      <div class="rm-read"><div class="rm-speed num" id="rmSpeed">0</div><div class="rm-unit" id="rmUnit">km/s</div></div>
+    </div>
+    <div class="rm-power">
+      <div class="rm-pbar"><div id="rmRegen"></div><div id="rmDrive"></div><span class="rm-pzero"></span></div>
+      <div class="rm-plabel"><span>geri kazanım</span><b class="num" id="rmPower">0 W</b><span>güç</span></div>
+    </div>
+  </div>
+  <div class="rm-bottom">
+    <div class="rm-stat"><span class="rm-l">Batarya</span><span class="rm-v num" id="rmBatt">–</span><div class="rm-bbar"><div id="rmBattBar" style="width:0%"></div></div></div>
+    <div class="rm-stat"><span class="rm-l">Menzil</span><span class="rm-v num" id="rmRange">–</span></div>
+    <div class="rm-stat"><span class="rm-l">Bu sürüş</span><span class="rm-v num" id="rmTrip">–</span></div>
+    <button class="rm-rec" id="rmRec" type="button">Kaydı başlat</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+"use strict";
+/* ============ yardımcılar ============ */
+const $ = id => document.getElementById(id);
+const ic = (n, cls="") => `<svg class="ic ${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+let toastT = null;
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2200); }
+function setDemoBtn(running){ $("btnDemoTxt").textContent = running ? "Demoyu durdur" : "Demoyu başlat"; $("demoUse").setAttribute("href", running ? "#i-stop" : "#i-play"); $("btnDemo").title = running ? "Demoyu durdur" : "Demoyu başlat"; }
+const KI = {"Toplam mesafe":"route","Sürüş süresi":"clock","Enerji":"bolt","Ort. tüketim":"gauge","Elektrik maliyeti":"coin","En yüksek hız":"flag","Mesafe":"route","Süre":"clock","Ort. / maks.":"gauge","Tüketim":"bolt","Geri kazanım":"regen","Maliyet":"coin"};
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const fmt = (v, d=0) => (v==null||isNaN(v)) ? "–" : Number(v).toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const hex = arr => Array.from(arr, b => b.toString(16).padStart(2,"0").toUpperCase()).join(" ");
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function hav(a,b){ const R=6371000, r=Math.PI/180; const dLat=(b.lat-a.lat)*r, dLon=(b.lon-a.lon)*r;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
+function durTxt(s){ s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), ss=s%60;
+  return h ? `${h}:${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}` : `${m}:${String(ss).padStart(2,"0")}`; }
+
+/* ============ durum ============ */
+const PACK_WH = 367, CELLS = 10;
+const S = {
+  speed:0, maxSpeed:0, battPct:null, voltage:null, current:null, power:null,
+  tCtl:null, tBat:null, odo:null, trip:0, tripTime:0, range:null,
+  cells:[], cycles:null, designCap:null, fullCap:null, remainCap:null, health:null,
+  error:0, fw:{}, serial:null,
+  lock:false, light:false, cruise:false, kers:1, walk:false
+};
+let unit = store.get("d38e.unit","km");
+const hist = { speed:[], power:[], batt:[] };
+const HIST_SEC = 120;
+function pushHist(t){
+  trackPos();
+  for (const [k,v] of [["speed",S.speed],["power",S.power],["batt",S.battPct]]) {
+    if (v==null) continue; hist[k].push({t, v}); while (hist[k].length && t - hist[k][0].t > HIST_SEC) hist[k].shift();
+  }
+}
+const kmF = () => unit==="mi" ? 0.621371 : 1;
+const uDist = () => unit==="mi" ? "mi" : "km";
+const uSpd = () => unit==="mi" ? "mph" : "km/s";
+
+/* ============ demo simülatörü ============ */
+function makeSim(seed){
+  let x = seed || 7; const rnd = () => (x = (x*16807) % 2147483647) / 2147483647;
+  return { rnd, target:12, slope:0, heading:0.7, lat:41.0369, lon:28.9850, wh:PACK_WH*0.82, t:0, cellOff:[0,3,-2,5,1,-4,2,0,-1,-17] };
+}
+let sim = makeSim(Date.now() % 100000);
+function simStep(sm, st, dt){
+  const r = sm.rnd;
+  if (r() < 0.035*dt*2) sm.target = r() < 0.12 ? 0 : 7 + r()*13;
+  const prev = st.speed;
+  let sp = prev + clamp(sm.target - prev, -3.5*dt, 1.8*dt);
+  sp = clamp(sp, 0, st.walk ? 5 : 20.2);
+  sm.slope = clamp(sm.slope + (r()-.5)*0.012*dt*2, -0.05, 0.06);
+  const v = sp/3.6, a = (sp-prev)/3.6/dt, m = 92;
+  let p = (m*9.81*(0.013+sm.slope)*v + 0.5*1.2*0.55*v**3 + m*a*v);
+  p = p > 0 ? p/0.82 : p*0.45;
+  if (sp < 0.3) p = 0;
+  p = clamp(p, -160, 480);
+  sm.wh = clamp(sm.wh - p*dt/3600, 0, PACK_WH);
+  const soc = sm.wh / PACK_WH;
+  const ocv = 10*(3.32 + 0.86*soc);
+  const cur = p / ocv;
+  st.voltage = ocv - cur*0.11;
+  st.current = cur; st.power = p; st.speed = sp;
+  st.battPct = Math.round(soc*100);
+  st.maxSpeed = Math.max(st.maxSpeed, sp);
+  st.tCtl = (st.tCtl ?? 26) + ((24 + Math.max(p,0)/11) - (st.tCtl ?? 26))*0.01*dt*2;
+  st.tBat = (st.tBat ?? 24) + ((23 + Math.max(p,0)/45) - (st.tBat ?? 24))*0.005*dt*2;
+  st.odo = (st.odo ?? 1843270) + v*dt;
+  st.trip += v*dt; st.tripTime += dt;
+  st.cells = sm.cellOff.map(o => Math.round(st.voltage/CELLS*1000 + o + (r()-.5)*2));
+  st.cycles = 47; st.designCap = 10200; st.fullCap = 9610; st.health = Math.round(9610/10200*100);
+  st.remainCap = Math.round(st.fullCap * soc);
+  st.range = sm.wh/10.5;
+  sm.heading += (r()-.5)*0.18*dt*2;
+  sm.lat += v*dt*Math.cos(sm.heading)/111320;
+  sm.lon += v*dt*Math.sin(sm.heading)/(111320*Math.cos(sm.lat*Math.PI/180));
+  sm.t += dt;
+}
+function simDevice(){
+  S.serial = "N8GJA0000Z0000 (demo)";
+  S.fw = { ESC:"3.0.1.13", BLE:"0.0.2" };
+}
+
+/* ============ örnek sürüşler ============ */
+function genTrip(seed, daysAgo, minutes, hour){
+  const sm = makeSim(seed), st = { speed:0, maxSpeed:0, trip:0, tripTime:0 };
+  const start = new Date(); start.setDate(start.getDate()-daysAgo); start.setHours(hour, (seed*7)%60, 0, 0);
+  const samples = [];
+  for (let i=0; i<minutes*60; i++){ simStep(sm, st, 1); samples.push({t:i, lat:+sm.lat.toFixed(6), lon:+sm.lon.toFixed(6), sp:+st.speed.toFixed(1), p:Math.round(st.power), b:st.battPct}); }
+  return finishTrip({ id:"ex"+seed, example:true, start:start.getTime(), samples, distM: st.trip });
+}
+function finishTrip(tr){
+  const s = tr.samples; let wh = 0, maxSp = 0;
+  for (let i=0;i<s.length;i++){ wh += Math.max(s[i].p,0)/3600; maxSp = Math.max(maxSp, s[i].sp); }
+  let regen = 0; for (const x of s) if (x.p<0) regen += -x.p/3600;
+  if (tr.distM == null){ tr.distM = 0; for (let i=1;i<s.length;i++) tr.distM += hav(s[i-1], s[i]); }
+  tr.dur = s.length ? s[s.length-1].t : 0;
+  tr.wh = wh; tr.regen = regen; tr.maxSp = maxSp;
+  tr.avgSp = tr.dur ? tr.distM/tr.dur*3.6 : 0;
+  tr.battUsed = s.length ? (s[0].b ?? 0) - (s[s.length-1].b ?? 0) : 0;
+  return tr;
+}
+const examples = [[11,1,18,8],[23,2,26,18],[37,4,12,9],[41,6,31,17],[53,9,15,8],[61,11,22,18],[67,14,9,8],[71,15,28,19],[79,19,14,8],[83,22,35,10],[89,26,11,8],[97,29,24,18],[101,33,16,8],[107,40,40,11],[109,47,13,8],[113,55,20,17],[127,62,18,8],[131,70,27,18],[137,83,15,9],[139,97,33,11]].map(a => genTrip(...a));
+let myTrips = store.get("d38e.trips", []);
+const allTrips = () => [...myTrips, ...examples].sort((a,b)=>b.start-a.start);
+
+/* ============ grafikler ============ */
+function lineChart(host, pts, o){
+  const W = Math.max(280, host.clientWidth || 320), H = o.h || 150, pl = 36, pr = 10, pt = 10, pb = 22;
+  const n = pts.length;
+  const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
+  const xMin = o.xMin ?? (n?xs[0]:0), xMax = o.xMax ?? (n?xs[n-1]:1);
+  let yMin = o.yMin ?? Math.min(0, ...ys), yMax = o.yMax ?? Math.max(1, ...ys);
+  if (o.yMaxAuto) yMax = Math.max(o.yMaxAuto, ...ys);
+  if (o.yMinAuto != null) yMin = Math.min(o.yMinAuto, ...ys);
+  const step = niceStep((yMax-yMin)/4); yMin = Math.floor(yMin/step)*step; yMax = Math.ceil(yMax/step)*step;
+  const X = x => pl + (xMax===xMin ? 0 : (x-xMin)/(xMax-xMin))*(W-pl-pr);
+  const Y = y => pt + (1-(y-yMin)/(yMax-yMin))*(H-pt-pb);
+  let g = "";
+  for (let v=yMin; v<=yMax+1e-9; v+=step){ g += `<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1" ${v===0?'':'stroke-dasharray="2 3"'}/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`; }
+  (o.xTicks||[]).forEach(t => { g += `<text x="${X(t.x)}" y="${H-6}" text-anchor="middle">${t.label}</text>`; });
+  let path = "", area = "";
+  if (n){
+    path = pts.map((p,i)=>`${i?"L":"M"}${X(p.x).toFixed(1)},${Y(p.y).toFixed(1)}`).join("");
+    const base = Y(clamp(0, yMin, yMax));
+    area = `${path}L${X(pts[n-1].x).toFixed(1)},${base}L${X(pts[0].x).toFixed(1)},${base}Z`;
+  }
+  const last = n ? `<circle cx="${X(pts[n-1].x)}" cy="${Y(pts[n-1].y)}" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>` : "";
+  const lim = o.limit!=null ? `<line x1="${pl}" x2="${W-pr}" y1="${Y(o.limit)}" y2="${Y(o.limit)}" stroke="var(--fg-2)" stroke-width="1" stroke-dasharray="5 4"/><text x="${W-pr}" y="${Y(o.limit)-4}" text-anchor="end">${o.limitLabel||""}</text>` : "";
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${o.aria||''}">
+    ${g}${lim}
+    <path d="${area}" fill="var(--accent-soft)"/>
+    <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${last}
+    <g class="hover" visibility="hidden"><line y1="${pt}" y2="${H-pb}" stroke="var(--fg-2)" stroke-width="1"/><circle r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></g>
+    <rect x="${pl}" y="0" width="${W-pl-pr}" height="${H}" fill="transparent"/>
+  </svg><div class="tip" hidden></div>`;
+  if (!n) return;
+  const svg = host.querySelector("svg"), hv = svg.querySelector(".hover"), tip = host.querySelector(".tip");
+  const show = clientX => {
+    const r = svg.getBoundingClientRect(); const px = (clientX - r.left) * (W / r.width);
+    let best = 0, bd = Infinity; for (let i=0;i<n;i++){ const d = Math.abs(X(pts[i].x)-px); if (d<bd){bd=d;best=i;} }
+    const p = pts[best], cx = X(p.x), cy = Y(p.y);
+    hv.setAttribute("visibility","visible"); hv.querySelector("line").setAttribute("x1",cx); hv.querySelector("line").setAttribute("x2",cx);
+    hv.querySelector("circle").setAttribute("cx",cx); hv.querySelector("circle").setAttribute("cy",cy);
+    tip.hidden = false; tip.textContent = o.tip(p);
+    tip.style.left = clamp(cx*(r.width/W), 50, r.width-50) + "px"; tip.style.top = (cy*(r.width/W)) + "px";
+    host._hx = clientX;
+  };
+  const hide = () => { hv.setAttribute("visibility","hidden"); tip.hidden = true; host._hx = null; };
+  svg.addEventListener("pointermove", e => show(e.clientX));
+  svg.addEventListener("pointerleave", hide);
+  if (host._hx != null) show(host._hx);
+}
+function barChart(host, items, o){
+  const W = Math.max(280, host.clientWidth || 320), H = o.h || 170, pl = 40, pr = 8, pt = 14, pb = 24;
+  const vals = items.map(i=>i.v);
+  let yMin = o.yMin ?? 0, yMax = o.yMax ?? Math.max(1, ...vals);
+  const step = niceStep((yMax-yMin)/4); yMin = Math.floor(yMin/step)*step; yMax = Math.ceil(yMax/step)*step || step;
+  const Y = y => pt + (1-(y-yMin)/(yMax-yMin))*(H-pt-pb);
+  const bw = (W-pl-pr)/items.length, gap = Math.max(2, bw*0.28);
+  let g = "";
+  for (let v=yMin; v<=yMax+1e-9; v+=step) g += `<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" ${v===yMin?'':'stroke-dasharray="2 3"'}/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`;
+  let bars = "";
+  items.forEach((it,i) => {
+    const x = pl + i*bw + gap/2, w = bw-gap, y0 = Y(yMin), y1 = Y(clamp(it.v, yMin, yMax)), h = Math.max(0, y0-y1);
+    const rr = Math.min(4, w/2, h);
+    const fill = it.color || "var(--accent)";
+    bars += h>0 ? `<path d="M${x},${y0}V${y1+rr}Q${x},${y1} ${x+rr},${y1}H${x+w-rr}Q${x+w},${y1} ${x+w},${y1+rr}V${y0}Z" fill="${fill}"/>` : "";
+    if (it.label) bars += `<text x="${x+w/2}" y="${H-7}" text-anchor="middle">${it.label}</text>`;
+    if (it.note) bars += `<text x="${x+w/2}" y="${y1-4}" text-anchor="middle" style="fill:var(--fg-2)">${it.note}</text>`;
+    bars += `<rect x="${pl+i*bw}" y="${pt}" width="${bw}" height="${H-pt-pb}" fill="transparent" data-i="${i}"/>`;
+  });
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="${o.aria||''}">${g}${bars}</svg><div class="tip" hidden></div>`;
+  const svg = host.querySelector("svg"), tip = host.querySelector(".tip");
+  svg.addEventListener("pointermove", e => {
+    const i = e.target.dataset && e.target.dataset.i; if (i==null){ tip.hidden = true; return; }
+    const r = svg.getBoundingClientRect(), it = items[+i], sc = r.width/W;
+    tip.hidden = false; tip.textContent = o.tip(it);
+    tip.style.left = clamp((pl+(+i+.5)*bw)*sc, 60, r.width-60)+"px"; tip.style.top = (Y(clamp(it.v,yMin,yMax))*sc)+"px";
+  });
+  svg.addEventListener("pointerleave", () => tip.hidden = true);
+}
+function niceStep(raw){ if (!(raw>0)) return 1; const p = Math.pow(10, Math.floor(Math.log10(raw))); const f = raw/p; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p; }
+
+/* ============ gösterge ============ */
+const G = { cx:100, cy:100, r:80, a0:-210, a1:30, max:25 };
+function arc(a0, a1){ const p = a => [G.cx + G.r*Math.cos(a*Math.PI/180), G.cy + G.r*Math.sin(a*Math.PI/180)];
+  const [x0,y0] = p(a0), [x1,y1] = p(a1); return `M${x0.toFixed(2)},${y0.toFixed(2)}A${G.r},${G.r} 0 ${a1-a0>180?1:0} 1 ${x1.toFixed(2)},${y1.toFixed(2)}`; }
+(function drawGauge(){
+  $("gTrack").setAttribute("d", arc(G.a0, G.a1));
+  let t = "";
+  for (let v=0; v<=G.max; v+=5){ const a = (G.a0 + (G.a1-G.a0)*v/G.max)*Math.PI/180;
+    const r1 = G.r-14, r2 = G.r-20, rt = G.r-30;
+    t += `<line x1="${G.cx+r1*Math.cos(a)}" y1="${G.cy+r1*Math.sin(a)}" x2="${G.cx+r2*Math.cos(a)}" y2="${G.cy+r2*Math.sin(a)}" stroke="var(--muted)" stroke-width="1.5"/>`;
+    t += `<text x="${G.cx+rt*Math.cos(a)}" y="${G.cy+rt*Math.sin(a)+4}" text-anchor="middle" font-size="10" fill="var(--muted)">${v}</text>`; }
+  const al = (G.a0 + (G.a1-G.a0)*20/G.max)*Math.PI/180;
+  t += `<line x1="${G.cx+(G.r+8)*Math.cos(al)}" y1="${G.cy+(G.r+8)*Math.sin(al)}" x2="${G.cx+(G.r-8)*Math.cos(al)}" y2="${G.cy+(G.r-8)*Math.sin(al)}" stroke="var(--fg)" stroke-width="2.5"/>`;
+  $("gTicks").innerHTML = t;
+})();
+
+/* ============ scooter çizimi ============ */
+const WY = 166; // tekerlek merkezi
+function tempColor(t, w, c){ return t==null ? "var(--muted)" : t < w ? "var(--good)" : t < c ? "var(--warn)" : "var(--crit)"; }
+function ring(el, frac, color){
+  if (!el) return; const r = 11, c = 2*Math.PI*r;
+  el.innerHTML = `<circle cx="15" cy="15" r="${r}" fill="none" stroke="var(--line)" stroke-width="4"/>` +
+    `<circle cx="15" cy="15" r="${r}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(c*clamp(frac||0,0,1)).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 15 15)"/>`;
+}
+(function buildScooter(){
+  const wheel = (id, cx, motor) => {
+    const spokes = [0,72,144,216,288].map(a => { const r = a*Math.PI/180;
+      return `<line x1="${cx}" y1="${WY}" x2="${(cx+15*Math.cos(r)).toFixed(1)}" y2="${(WY+15*Math.sin(r)).toFixed(1)}" stroke="var(--fg-2)" stroke-width="2" stroke-linecap="round"/>`; }).join("");
+    return `<g id="${id}"><circle cx="${cx}" cy="${WY}" r="24" fill="none" stroke="var(--fg)" stroke-width="7"/>
+      <circle cx="${cx}" cy="${WY}" r="15" fill="none" stroke="var(--line)" stroke-width="2"/>${spokes}</g>` +
+      (motor ? `<circle id="scMotor" cx="${cx}" cy="${WY}" r="9" fill="var(--accent)" fill-opacity=".3" stroke="var(--accent)" stroke-width="1.5"/>`
+             : `<circle cx="${cx}" cy="${WY}" r="4" fill="var(--fg-2)"/>`);
+  };
+  $("scooter").innerHTML = `
+  <defs>
+    <linearGradient id="beam" x1="0" x2="1"><stop offset="0" style="stop-color:#FFC94D;stop-opacity:.5"/><stop offset="1" style="stop-color:#FFC94D;stop-opacity:0"/></linearGradient>
+    <radialGradient id="tailGlow"><stop offset="0" style="stop-color:var(--crit);stop-opacity:.75"/><stop offset="1" style="stop-color:var(--crit);stop-opacity:0"/></radialGradient>
+  </defs>
+  <line id="scGround" x1="0" x2="400" y1="193" y2="193" stroke="var(--line)" stroke-width="2" stroke-dasharray="14 10"/>
+  <polygon id="scHeadGlow" points="300,53 396,28 396,92 300,63" fill="url(#beam)"/>
+  <circle id="scTailGlow" cx="42" cy="152" r="18" fill="url(#tailGlow)"/>
+  <path d="M40,164 A30,30 0 0 1 98,146" fill="none" stroke="var(--fg-2)" stroke-width="4" stroke-linecap="round"/>
+  <rect id="scTail" x="37" y="147" width="7" height="10" rx="2" fill="var(--crit)"/>
+  ${wheel("wR", 70, false)}
+  ${wheel("wF", 300, true)}
+  <line x1="290" y1="30" x2="300" y2="${WY}" stroke="var(--fg-2)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M262,152 L294,126" stroke="var(--fg-2)" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <line x1="266" y1="28" x2="314" y2="28" stroke="var(--fg)" stroke-width="6" stroke-linecap="round"/>
+  <rect x="281" y="19" width="18" height="9" rx="2" fill="var(--fg)"/>
+  <circle cx="296" cy="58" r="5.5" fill="#FFC94D" stroke="var(--fg-2)" stroke-width="1.5"/>
+  <rect x="60" y="144" width="210" height="16" rx="7" fill="var(--fg)"/>
+  <rect x="96" y="148.5" width="126" height="7" rx="3.5" fill="var(--surface-2)"/>
+  <rect id="scBatt" x="96" y="148.5" width="0" height="7" rx="3.5" fill="var(--accent)"/>
+  <rect id="scCtl" x="233" y="148" width="26" height="8" rx="2" fill="var(--good)"/>
+  <path id="scFlow" class="flow" d="M159,165 L246,165 L246,165 L289,166" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="159" y1="126" x2="159" y2="143" stroke="var(--muted)" stroke-width="1"/>
+  <text x="159" y="102" text-anchor="middle">BATARYA</text>
+  <text id="scBattVal" class="val" x="159" y="120" text-anchor="middle">–</text>
+  <line x1="246" y1="126" x2="246" y2="147" stroke="var(--muted)" stroke-width="1"/>
+  <text x="246" y="102" text-anchor="middle">KONTROLCÜ</text>
+  <text id="scCtlVal" class="val" x="246" y="120" text-anchor="middle">–</text>
+  <text id="scMotorLbl" x="332" y="150">MOTOR</text>
+  <text id="scMotorVal" class="val" x="332" y="168">–</text>
+  <g id="scLock"><rect x="6" y="6" width="74" height="22" rx="11" fill="var(--crit-soft)"/><text class="badge" x="43" y="21" text-anchor="middle" style="fill:var(--crit)">KİLİTLİ</text></g>
+  <g id="scWalk"><rect x="6" y="62" width="74" height="22" rx="11" fill="var(--good-soft)"/><text class="badge" x="43" y="77" text-anchor="middle" style="fill:var(--good)">YÜRÜYÜŞ</text></g>
+  <g id="scCruise"><rect x="6" y="34" width="74" height="22" rx="11" fill="var(--accent-soft)"/><text class="badge" x="43" y="49" text-anchor="middle" style="fill:var(--accent)">CRUISE</text></g>`;
+})();
+function updateScooter(){
+  const q = id => document.getElementById(id);
+  const b = S.battPct ?? 0, p = S.power ?? 0, on = mode !== "idle";
+  q("scBatt").setAttribute("width", (126*b/100).toFixed(1));
+  q("scBatt").setAttribute("fill", S.battPct!=null && b < 15 ? "var(--crit)" : "var(--accent)");
+  q("scBattVal").textContent = S.battPct==null ? "–" : `%${S.battPct} · ${fmt(S.voltage,1)} V`;
+  const fl = q("scFlow"), regen = p < -8;
+  fl.style.visibility = Math.abs(p) > 8 ? "visible" : "hidden";
+  fl.classList.toggle("rev", regen);
+  fl.style.stroke = regen ? "var(--good)" : "var(--accent)";
+  fl.style.animationDuration = clamp(1.4 - Math.abs(p)/420, 0.3, 1.4) + "s";
+  q("scMotor").setAttribute("fill", regen ? "var(--good)" : "var(--accent)");
+  q("scMotor").setAttribute("stroke", regen ? "var(--good)" : "var(--accent)");
+  q("scMotor").setAttribute("fill-opacity", (0.12 + clamp(Math.abs(p)/480,0,1)*0.88).toFixed(2));
+  q("scMotorLbl").textContent = regen ? "ŞARJ" : "MOTOR";
+  q("scMotorVal").textContent = S.power==null ? "–" : `${fmt(Math.abs(p))} W`;
+  q("scCtl").setAttribute("fill", tempColor(S.tCtl, 50, 65));
+  q("scCtlVal").textContent = S.tCtl==null ? "–" : `${fmt(S.tCtl)} °C`;
+  const tail = on && (S.light || p < -20);
+  q("scTail").style.opacity = tail ? 1 : 0.3; q("scTailGlow").style.opacity = tail ? 1 : 0;
+  q("scHeadGlow").style.opacity = on ? 1 : 0;
+  q("scLock").style.visibility = S.lock ? "visible" : "hidden";
+  q("scCruise").style.visibility = S.cruise ? "visible" : "hidden";
+  q("scWalk").style.visibility = S.walk ? "visible" : "hidden";
+}
+const RM = matchMedia("(prefers-reduced-motion: reduce)");
+/* D: ekranda gösterilen yumuşatılmış değerler. Veri saniyede 2 kez gelir, çizim her karede bu değere doğru kayar. */
+const D = { speed:0, power:0 };
+let wheelA = 0, groundOff = 0, lastFrame = performance.now(), rideOpen = false;
+function frame(t){
+  const dt = Math.min(0.1, (t - lastFrame)/1000); lastFrame = t;
+  const k = RM.matches ? 1 : 1 - Math.exp(-dt*5);
+  D.speed += ((S.speed||0) - D.speed)*k; D.power += ((S.power||0) - D.power)*k;
+  if (rideOpen) drawRide(dt);
+  else if (activeTab === "panel"){
+    const txt = String(Math.round(D.speed*kmF())); if ($("vSpeed").textContent !== txt) $("vSpeed").textContent = txt;
+    const frac = clamp(D.speed/G.max, 0, 1);
+    $("gVal").setAttribute("d", frac > 0.005 ? arc(G.a0, G.a0 + (G.a1-G.a0)*frac) : "");
+    if (!RM.matches){
+      wheelA = (wheelA + D.speed*dt*40) % 360; groundOff = (groundOff + D.speed*dt*6) % 24;
+      $("wR").setAttribute("transform", `rotate(${wheelA.toFixed(1)} 70 ${WY})`);
+      $("wF").setAttribute("transform", `rotate(${wheelA.toFixed(1)} 300 ${WY})`);
+      $("scGround").setAttribute("stroke-dashoffset", groundOff.toFixed(1));
+    }
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ============ sürüş modu ============ */
+const RMAX = 25;
+(function buildRideDial(){
+  const pt = (deg, r) => [150 + r*Math.cos(deg*Math.PI/180), 150 + r*Math.sin(deg*Math.PI/180)];
+  const [x0,y0] = pt(135,128), [x1,y1] = pt(405,128);
+  const d = `M${x0.toFixed(2)},${y0.toFixed(2)}A128,128 0 1 1 ${x1.toFixed(2)},${y1.toFixed(2)}`;
+  $("rmTrack").setAttribute("d", d); $("rmArc").setAttribute("d", d);
+  let t = "";
+  for (let v = 0; v <= RMAX; v += 2.5){
+    const a = 135 + 270*v/RMAX, major = v % 5 === 0, [a1,b1] = pt(a, 112), [a2,b2] = pt(a, major ? 102 : 107);
+    t += `<line x1="${a1.toFixed(1)}" y1="${b1.toFixed(1)}" x2="${a2.toFixed(1)}" y2="${b2.toFixed(1)}" style="stroke:var(--rm-dim)" stroke-width="${major?2:1}" stroke-linecap="round" opacity="${major?.9:.5}"/>`;
+    if (major){ const [tx,ty] = pt(a, 90); t += `<text x="${tx.toFixed(1)}" y="${(ty+4).toFixed(1)}" text-anchor="middle">${v}</text>`; }
+  }
+  const al = 135 + 270*20/RMAX, [l1,m1] = pt(al, 142), [l2,m2] = pt(al, 114);
+  t += `<line x1="${l1.toFixed(1)}" y1="${m1.toFixed(1)}" x2="${l2.toFixed(1)}" y2="${m2.toFixed(1)}" style="stroke:var(--rm-fg)" stroke-width="3" stroke-linecap="round"/>`;
+  $("rmTicks").innerHTML = t;
+})();
+const fx = { parts:[], w:0, h:0, ctx:null };
+function fxResize(){
+  const c = $("rideFx"), dpr = Math.min(2, window.devicePixelRatio || 1);
+  fx.w = c.clientWidth; fx.h = c.clientHeight; c.width = Math.round(fx.w*dpr); c.height = Math.round(fx.h*dpr);
+  fx.ctx = c.getContext("2d"); fx.ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function fxDraw(dt){
+  const ctx = fx.ctx; if (!ctx) return;
+  ctx.clearRect(0, 0, fx.w, fx.h); if (RM.matches) return;
+  const dial = document.querySelector(".rm-dial").getBoundingClientRect();
+  const cx = dial.left + dial.width/2, cy = dial.top + dial.height/2, maxR = Math.hypot(fx.w, fx.h)*0.62, inner = dial.width*0.5, v = clamp(D.speed/20, 0, 1.3);
+  while (fx.parts.length < 80) fx.parts.push({ a:Math.random()*6.283, r:inner + Math.random()*(maxR-inner), s:0.5 + Math.random() });
+  ctx.lineCap = "round";
+  for (const p of fx.parts){
+    const q = (p.r - inner)/(maxR - inner);
+    p.r += (6 + v*560*p.s)*(0.3 + q)*dt;
+    if (p.r > maxR){ p.r = inner + Math.random()*30; p.a = Math.random()*6.283; continue; }
+    const len = 1.5 + v*60*q*p.s, al = clamp((0.25 + q)*(0.08 + v*0.5), 0, 0.7), c = Math.cos(p.a), s = Math.sin(p.a);
+    ctx.strokeStyle = `rgba(130,170,255,${al.toFixed(3)})`; ctx.lineWidth = 1 + q*1.8;
+    ctx.beginPath(); ctx.moveTo(cx + c*p.r, cy + s*p.r); ctx.lineTo(cx + c*(p.r+len), cy + s*(p.r+len)); ctx.stroke();
+  }
+}
+function drawRide(dt){
+  const f = kmF(), txt = String(Math.round(D.speed*f)), el = $("rmSpeed");
+  if (el.textContent !== txt) el.textContent = txt;
+  const frac = clamp(D.speed/RMAX, 0, 1), arcEl = $("rmArc");
+  arcEl.setAttribute("stroke-dasharray", `${(frac*100).toFixed(2)} 100`);
+  arcEl.style.opacity = frac < 0.004 ? 0 : 1;
+  arcEl.classList.toggle("over", D.speed > 20.6);
+  $("ride").style.setProperty("--glow", (0.15 + frac*0.85).toFixed(2));
+  const p = D.power;
+  $("rmDrive").style.width = (clamp(p/500, 0, 1)*50).toFixed(1) + "%";
+  $("rmRegen").style.width = (clamp(-p/200, 0, 1)*50).toFixed(1) + "%";
+  const ptxt = `${Math.round(p)} W`; if ($("rmPower").textContent !== ptxt) $("rmPower").textContent = ptxt;
+  fxDraw(dt);
+}
+function renderRideSlow(){
+  const f = kmF(), b = S.battPct;
+  $("rmUnit").textContent = uSpd();
+  $("rmBatt").innerHTML = b==null ? "–" : `%${b}`;
+  $("rmBattBar").style.width = (b ?? 0) + "%";
+  $("rmBattBar").style.background = b==null ? "var(--rm-dim)" : b < 15 ? "var(--rm-crit)" : b < 30 ? "var(--rm-warn)" : "var(--rm-good)";
+  $("rmRange").innerHTML = S.range==null ? "–" : `${fmt(S.range*f,1)}<small>${uDist()}</small>`;
+  $("rmTrip").innerHTML = `${fmt(S.trip/1000*f,2)}<small>${uDist()}</small>`;
+  $("rmClock").textContent = new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+  $("rmConn").textContent = $("connText").textContent;
+  const r = $("rmRec"); r.classList.toggle("on", !!rec);
+  r.textContent = rec ? `■ Kaydı bitir · ${$("recInfo").textContent}` : "● Kaydı başlat";
+  const e = $("rmErr"); e.hidden = !S.error; if (S.error) e.textContent = `! Hata ${S.error}: ${(ERR[S.error]||["Bilinmeyen hata"])[0]}`;
+}
+let rideLock = null;
+async function openRide(){
+  rideOpen = true; $("ride").hidden = false; document.body.style.overflow = "hidden";
+  fxResize(); renderRideSlow(); $("rmClose").focus();
+  if (location.hash !== "#surus") history.replaceState(null, "", "#surus");
+  try { rideLock = await navigator.wakeLock?.request("screen"); } catch(e){ rideLock = null; }
+  try { await document.documentElement.requestFullscreen?.(); } catch(e){}
+}
+function closeRide(){
+  rideOpen = false; $("ride").hidden = true; document.body.style.overflow = "";
+  try { rideLock && rideLock.release(); } catch(e){} rideLock = null;
+  try { if (document.fullscreenElement) document.exitFullscreen(); } catch(e){}
+  history.replaceState(null, "", "#" + activeTab); renderAll(); $("btnRide").focus();
+}
+
+/* ============ render ============ */
+let activeTab = "panel";
+function renderPanel(){
+  const f = kmF();
+  document.querySelector(".gauge .read .muted").textContent = uSpd();
+  $("vBattBar").style.width = (S.battPct ?? 0) + "%";
+  $("vBattBar").style.background = S.battPct!=null && S.battPct < 15 ? "var(--crit)" : "var(--accent)";
+  $("vBattTxt").textContent = S.battPct==null ? "–" : `%${S.battPct}`;
+  const set = (id, v, d, u) => $(id).innerHTML = v==null ? "–" : `${fmt(v,d)}<small>${u}</small>`;
+  set("vPower", S.power, 0, "W");
+  set("vRange", S.range!=null ? S.range*f : null, 1, uDist());
+  set("vVolt", S.voltage, 1, "V");
+  set("vCurr", S.current, 1, "A");
+  set("vTctl", S.tCtl, 0, "°C");
+  set("vTbat", S.tBat, 0, "°C");
+  set("vTrip", S.trip/1000*f, 2, uDist());
+  set("vOdo", S.odo!=null ? S.odo/1000*f : null, 0, uDist());
+  const p = S.power ?? 0;
+  ring($("rPower"), Math.abs(p)/600, p < 0 ? "var(--good)" : "var(--accent)");
+  ring($("rRange"), S.range!=null ? S.range/45 : 0, "var(--accent)");
+  ring($("rCtl"), (S.tCtl ?? 0)/80, tempColor(S.tCtl, 50, 65));
+  ring($("rBat"), (S.tBat ?? 0)/60, tempColor(S.tBat, 40, 50));
+  updateScooter();
+  renderLoc();
+  renderDevice();
+  const now = hist.speed.length ? hist.speed[hist.speed.length-1].t : 0;
+  const xt = [{x:now-120,label:"-2 dk"},{x:now-60,label:"-1 dk"},{x:now,label:"şimdi"}];
+  if (activeTab==="panel"){
+    lineChart($("chSpeed"), hist.speed.map(p=>({x:p.t,y:p.v*f})), {xMin:now-HIST_SEC, xMax:now, yMin:0, yMax:25*f, limit:20*f, limitLabel:`yasal sınır 20 ${uSpd()}`, xTicks:xt, tip:p=>`${fmt(p.y,1)} ${uSpd()} · ${fmt(now-p.x)} sn önce`, aria:"Son iki dakikanın hız grafiği"});
+    lineChart($("chPower"), hist.power.map(p=>({x:p.t,y:p.v})), {xMin:now-HIST_SEC, xMax:now, yMinAuto:-50, yMaxAuto:200, xTicks:xt, tip:p=>`${fmt(p.y)} W · ${fmt(now-p.x)} sn önce`, aria:"Son iki dakikanın güç grafiği"});
+  }
+  const showErr = S.error && S.error !== 0;
+  $("errBanner").hidden = !showErr;
+  if (showErr) $("errBannerText").innerHTML = `<b>Hata ${S.error}:</b> ${(ERR[S.error]||["Bilinmeyen hata kodu"])[0]}. Ayrıntı için Arıza sekmesine bakın.`;
+}
+function renderBattery(){
+  $("bHealth").innerHTML = S.health==null ? "–" : `%${S.health}`;
+  $("bCycles").textContent = S.cycles ?? "–";
+  $("bFull").innerHTML = S.fullCap==null ? "–" : `${fmt(S.fullCap)}<small>mAh</small>`;
+  $("bRemain").innerHTML = S.remainCap==null ? "–" : `${fmt(S.remainCap)}<small>mAh</small>`;
+  { const r = 40, c = 2*Math.PI*r, h = S.health, col = h==null ? "var(--muted)" : h>=85 ? "var(--good)" : h>=70 ? "var(--warn)" : "var(--crit)";
+    $("bHealthRing").innerHTML = `<circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="10"/>` +
+      `<circle cx="50" cy="50" r="${r}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${(c*(h||0)/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 50 50)"/>` +
+      `<text x="50" y="52" text-anchor="middle" style="font-family:var(--f-display);font-size:24px;font-weight:700;fill:var(--fg)">${h==null?"–":"%"+h}</text>` +
+      `<text x="50" y="68" text-anchor="middle" style="font-size:9px;letter-spacing:.08em;fill:var(--muted)">SAĞLIK</text>`; }
+  const hp = $("healthPill");
+  if (S.health==null){ hp.className="pill idle"; hp.textContent="Veri yok"; }
+  else if (S.health>=85){ hp.className="pill ok"; hp.textContent="İyi"; }
+  else if (S.health>=70){ hp.className="pill warn"; hp.textContent="Yıpranmış"; }
+  else { hp.className="pill crit"; hp.textContent="Değişim zamanı"; }
+  const c = S.cells.filter(v=>v>0);
+  const cp = $("cellPill");
+  if (!c.length){ ["cMin","cMax","cDelta"].forEach(i=>$(i).textContent="–"); cp.className="pill idle"; cp.textContent="Veri yok"; }
+  else {
+    const mn = Math.min(...c), mx = Math.max(...c), d = mx-mn;
+    $("cMin").innerHTML = `${fmt(mn/1000,3)}<small>V</small>`; $("cMax").innerHTML = `${fmt(mx/1000,3)}<small>V</small>`; $("cDelta").innerHTML = `${d}<small>mV</small>`;
+    if (d<=30){ cp.className="pill ok"; cp.textContent="Dengeli"; } else if (d<=80){ cp.className="pill warn"; cp.textContent="! Takip edin"; } else { cp.className="pill crit"; cp.textContent="! Servis"; }
+    if (activeTab==="batarya") renderPack(c, mn, mx, d);
+    if (activeTab==="batarya"){
+      const lo = Math.floor((mn-40)/50)*50, hi = Math.ceil((mx+20)/50)*50;
+      barChart($("chCells"), c.map((v,i)=>({v, label:`H${i+1}`, color: v===mn && d>30 ? "var(--warn)" : "var(--accent)", note: v===mn ? "en düşük" : (v===mx ? "en yüksek" : "")})),
+        {yMin:lo, yMax:hi, h:190, tip:it=>`${it.label}: ${fmt(it.v)} mV (${it.v-mn>=0?"+":""}${it.v-mn} mV)`, aria:"Hücre voltajları"});
+    }
+  }
+  if (activeTab==="batarya"){
+    const now = hist.batt.length ? hist.batt[hist.batt.length-1].t : 0;
+    lineChart($("chBatt"), hist.batt.map(p=>({x:p.t,y:p.v})), {xMin:now-HIST_SEC, xMax:now, yMinAuto: Math.max(0,(S.battPct??50)-5), yMaxAuto: Math.min(100,(S.battPct??50)+3), xTicks:[{x:now-120,label:"-2 dk"},{x:now,label:"şimdi"}], tip:p=>`%${fmt(p.y)}`, aria:"Batarya seviyesi"});
+  }
+}
+function renderPack(c, mn, mx, d){
+  const host = $("pack"), W = Math.max(300, host.clientWidth || 600), n = c.length;
+  const padX = 26, top = 26, cellH = 92, gap = Math.max(4, W*0.012);
+  const cw = Math.min(64, (W - padX*2 - gap*(n-1))/n), total = cw*n + gap*(n-1), x0 = (W-total)/2, H = top + cellH + 44;
+  let s = `<rect x="${x0-12}" y="${top-10}" width="${total+24}" height="${cellH+20}" rx="10" fill="none" stroke="var(--line)" stroke-width="2"/>`;
+  s += `<text x="${x0-12}" y="${top-16}" style="font-size:11px;fill:var(--muted)">− kutup</text><text x="${x0+total+12}" y="${top-16}" text-anchor="end" style="font-size:11px;fill:var(--muted)">+ kutup</text>`;
+  c.forEach((v,i) => {
+    const x = x0 + i*(cw+gap), lvl = clamp((v-3000)/1200, 0, 1), fh = (cellH-10)*lvl;
+    const weak = v===mn && d>30, col = weak ? "var(--warn)" : "var(--accent)";
+    s += `<g><title>Hücre ${i+1}: ${fmt(v/1000,3)} V (${v-mn>=0?"+":""}${v-mn} mV)</title>`;
+    s += `<rect x="${x+cw*0.3}" y="${top-4}" width="${cw*0.4}" height="5" rx="1.5" fill="var(--line)"/>`;
+    s += `<rect x="${x}" y="${top}" width="${cw}" height="${cellH}" rx="6" fill="var(--surface-2)" stroke="${weak?"var(--warn)":"var(--line)"}" stroke-width="${weak?2:1}"/>`;
+    s += `<rect x="${x+4}" y="${top+cellH-5-fh}" width="${cw-8}" height="${fh}" rx="3" fill="${col}" fill-opacity="${(0.55+0.45*lvl).toFixed(2)}"/>`;
+    if (i < n-1) s += `<line x1="${x+cw}" x2="${x+cw+gap}" y1="${top+cellH/2}" y2="${top+cellH/2}" stroke="var(--muted)" stroke-width="2"/>`;
+    s += `<text x="${x+cw/2}" y="${top+cellH+18}" text-anchor="middle" style="font-family:var(--f-display);font-size:${cw<40?11:14}px;font-weight:600;fill:var(--fg)">${fmt(v/1000,cw<40?2:3)}</text>`;
+    s += `<text x="${x+cw/2}" y="${top+cellH+33}" text-anchor="middle" style="font-size:10px;fill:${weak?"var(--warn)":"var(--muted)"}">${weak?"! zayıf":"H"+(i+1)}</text></g>`;
+  });
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Batarya paketindeki 10 hücrenin doluluğu">${s}</svg>`;
+}
+function renderErrors(){
+  const ep = $("errPill");
+  if (S.error){ ep.className="pill crit"; ep.textContent=`! Hata ${S.error}`; const e = ERR[S.error]||["Bilinmeyen hata kodu","Kodu not edip servise danışın."]; $("errNow").innerHTML = `<b>${e[0]}.</b> ${e[1]}`; }
+  else { ep.className="pill ok"; ep.textContent="Hata yok"; $("errNow").textContent = "Scooter şu an hata bildirmiyor."; }
+  $("errTable").innerHTML = Object.entries(ERR).map(([k,[a,b]]) => `<tr${+k===S.error?' style="background:var(--crit-soft)"':''}><td class="num"><b>${k}</b></td><td>${a}</td><td class="fg2">${b}</td></tr>`).join("");
+  renderDevice();
+}
+function renderDevice(){
+  const f = kmF(), nm = scName();
+  $("devName").textContent = nm; $("heroNameTxt").textContent = nm;
+  const bd = store.get("d38e.buy", "");
+  if ($("buyDate").value !== bd && document.activeElement !== $("buyDate")) $("buyDate").value = bd;
+  if (bd){ const days = Math.max(0, Math.floor((Date.now() - new Date(bd+"T00:00").getTime())/86400000)); $("ownDays").innerHTML = `<b>${fmt(days)} gündür</b> sizinle`; }
+  else $("ownDays").textContent = "Satın alma tarihini girerseniz kaç gündür sizinle olduğu burada görünür.";
+  const k = (i,l,v,cls="") => `<div class="kpi"><span class="label">${ic(i,"sm")}${l}</span><span class="v ${cls}">${v}</span></div>`;
+  const ser = S.serial ? `${S.serial}<button class="btn icon-s" id="btnCopySerial" type="button" aria-label="Seri numarasını kopyala">${ic("copy","sm")}</button>` : "–";
+  $("devKpis").innerHTML =
+    k("info","Seri no", ser, "sm") +
+    k("road","Toplam sürüş", S.odo!=null ? `${fmt(S.odo/1000*f,1)}<small>${uDist()}</small>` : "–") +
+    k("thermo","Araç sıcaklığı", S.tCtl!=null ? `${fmt(S.tCtl)}<small>°C</small>` : "–") +
+    k("chip","Ana kontrol", S.fw.ESC ? "v"+S.fw.ESC : "–") +
+    k("bluetooth","BLE", S.fw.BLE ? "v"+S.fw.BLE : "–") +
+    k("battery","Batarya (BMS)", S.fw.BMS ? "v"+S.fw.BMS : "–");
+  const cs = $("btnCopySerial"); if (cs) cs.onclick = () => copyText(String(S.serial).replace(" (demo)",""), null, "Seri numarası kopyalandı");
+  const rows = [["Model","Ninebot KickScooter D38E"],["Bluetooth adı", (typeof dev!=="undefined" && dev && dev.name) || "–"],["Fabrika kapasitesi", S.designCap?`${fmt(S.designCap)} mAh`:"–"],["Batarya döngüsü", S.cycles ?? "–"]];
+  $("devInfo").innerHTML = rows.map(r=>`<tr><td class="muted">${r[0]}</td><td>${r[1]}</td></tr>`).join("");
+  const bt = $("heroBt"), on = mode === "ble" && dev && dev.gatt && dev.gatt.connected;
+  bt.classList.toggle("on", !!on); $("heroBtTxt").textContent = on ? "Bağlı" : mode === "demo" ? "Demo" : "Bağlı değil";
+}
+function renderControls(){
+  $("cLock").checked = S.lock; $("cLight").checked = S.light; $("cCruise").checked = S.cruise; $("cWalk").checked = S.walk;
+  $("cKers").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", +b.dataset.v===S.kers));
+  $("cUnit").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.v===unit));
+}
+
+/* ============ sürüşler ============ */
+let selTrip = null;
+function renderTrips(){
+  const trips = allTrips(), f = kmF(), price = +$("kwhPrice").value || 0;
+  const tot = trips.reduce((a,t)=>({d:a.d+t.distM, s:a.s+t.dur, wh:a.wh+t.wh, mx:Math.max(a.mx,t.maxSp)}), {d:0,s:0,wh:0,mx:0});
+  const k = (l,v)=>`<div class="kpi"><span class="label">${KI[l]?ic(KI[l],"sm"):""}${l}</span><span class="v">${v}</span></div>`;
+  $("statKpis").innerHTML =
+    k("Toplam mesafe", `${fmt(tot.d/1000*f,1)}<small>${uDist()}</small>`) +
+    k("Sürüş süresi", durTxt(tot.s)) +
+    k("Enerji", `${fmt(tot.wh,0)}<small>Wh</small>`) +
+    k("Ort. tüketim", `${fmt(tot.d?tot.wh/(tot.d/1000*f):0,1)}<small>Wh/${uDist()}</small>`) +
+    k("Elektrik maliyeti", `${fmt(tot.wh/1000*price/0.85,2)}<small>TL</small>`) +
+    k("En yüksek hız", `${fmt(tot.mx*f,1)}<small>${uSpd()}</small>`);
+  const days = []; const today = new Date(); today.setHours(0,0,0,0);
+  for (let i=13;i>=0;i--){ const d = new Date(today); d.setDate(d.getDate()-i); days.push({d, v:0}); }
+  trips.forEach(t => { const d = new Date(t.start); d.setHours(0,0,0,0); const e = days.find(x=>x.d.getTime()===d.getTime()); if (e) e.v += t.distM/1000*f; });
+  barChart($("chDaily"), days.map((x,i)=>({v:x.v, label: (i%2===1||i===13) ? x.d.toLocaleDateString("tr-TR",{day:"numeric",month:"numeric"}) : "", day:x.d})),
+    {h:160, tip:it=>`${it.day.toLocaleDateString("tr-TR",{weekday:"short",day:"numeric",month:"long"})}: ${fmt(it.v,2)} ${uDist()}`, aria:"Son 14 günün günlük mesafesi"});
+  renderHeat(trips);
+  if (!selTrip || !trips.find(t=>t.id===selTrip)) selTrip = trips[0] && trips[0].id;
+  $("tripList").innerHTML = trips.map(t => {
+    const d = new Date(t.start);
+    return `<button class="trip" type="button" data-id="${t.id}" aria-current="${t.id===selTrip}">
+      <span class="cic">${ic("route")}</span><span><b>${d.toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"})}</b>${t.example?'<span class="tag">örnek</span>':''}<br><span class="meta">${d.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})} · ${durTxt(t.dur)} · ort. ${fmt(t.avgSp*f,1)} ${uSpd()}</span></span>
+      <span class="num" style="text-align:right"><b>${fmt(t.distM/1000*f,2)} ${uDist()}</b><br><span class="meta">${fmt(t.wh,0)} Wh</span></span></button>`; }).join("") || `<p class="muted">Henüz sürüş yok.</p>`;
+  renderTripDetail();
+}
+const heatColor = q => q<=0 ? "var(--surface-2)" : `color-mix(in oklab, var(--accent) ${Math.round(20+q*80)}%, var(--accent-light))`;
+function renderHeat(trips){
+  const f = kmF(), WEEKS = 16, cs = 15, g = 3, left = 30, topP = 18;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dow = (today.getDay()+6)%7; // pazartesi = 0
+  const start = new Date(today); start.setDate(start.getDate() - dow - (WEEKS-1)*7);
+  const km = {}; trips.forEach(t => { const d = new Date(t.start); d.setHours(0,0,0,0); km[d.getTime()] = (km[d.getTime()]||0) + t.distM/1000*f; });
+  const mx = Math.max(1, ...Object.values(km));
+  let s = "", lastM = -1, lastLW = -9;
+  ["Pzt","","Çar","","Cum","","Paz"].forEach((l,i) => { if (l) s += `<text x="${left-6}" y="${topP+i*(cs+g)+11}" text-anchor="end" style="font-size:10px;fill:var(--muted)">${l}</text>`; });
+  for (let w=0; w<WEEKS; w++) for (let d=0; d<7; d++){
+    const day = new Date(start); day.setDate(start.getDate() + w*7 + d);
+    if (day > today) continue;
+    const x = left + w*(cs+g), y = topP + d*(cs+g), v = km[day.getTime()] || 0;
+    if (d===0 && day.getMonth()!==lastM){ lastM = day.getMonth(); if (w - lastLW >= 3){ lastLW = w; s += `<text x="${x}" y="${topP-6}" style="font-size:10px;fill:var(--muted)">${day.toLocaleDateString("tr-TR",{month:"short"})}</text>`; } }
+    s += `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" rx="3" fill="${heatColor(v/mx)}"${day.getTime()===today.getTime()?' stroke="var(--fg-2)" stroke-width="1.5"':''}><title>${day.toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"})}: ${v?fmt(v,2)+" "+uDist():"sürüş yok"}</title></rect>`;
+  }
+  const W = left + WEEKS*(cs+g), H = topP + 7*(cs+g);
+  $("heat").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Son 16 haftanın sürüş takvimi">${s}</svg>`;
+  $("heatLegend").innerHTML = [0,0.25,0.5,0.75,1].map(q=>`<i style="background:${heatColor(q)}"></i>`).join("");
+}
+function renderTripDetail(){
+  const t = allTrips().find(x=>x.id===selTrip); if (!t) return;
+  const f = kmF(), price = +$("kwhPrice").value || 0, d = new Date(t.start);
+  $("tdTitle").textContent = d.toLocaleString("tr-TR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});
+  $("tdTag").innerHTML = t.example ? '<span class="tag">örnek veri</span>' : "";
+  const k = (l,v)=>`<div class="kpi"><span class="label">${KI[l]?ic(KI[l],"sm"):""}${l}</span><span class="v">${v}</span></div>`;
+  $("tdKpis").innerHTML = k("Mesafe",`${fmt(t.distM/1000*f,2)}<small>${uDist()}</small>`) + k("Süre",durTxt(t.dur)) +
+    k("Ort. / maks.", `${fmt(t.avgSp*f,1)} / ${fmt(t.maxSp*f,1)}<small>${uSpd()}</small>`) +
+    k("Tüketim",`${fmt(t.distM?t.wh/(t.distM/1000*f):0,1)}<small>Wh/${uDist()}</small>`) +
+    k("Geri kazanım",`${fmt(t.regen,1)}<small>Wh</small>`) + k("Maliyet",`${fmt(t.wh/1000*price/0.85,2)}<small>TL</small>`);
+  // rota
+  const s = t.samples.filter(p=>p.lat!=null);
+  const svg = $("tdRoute");
+  if (s.length < 2){ svg.innerHTML = `<text x="160" y="104" text-anchor="middle" fill="var(--muted)" font-size="12">Bu sürüşte GPS verisi yok</text>`; $("tdOsm").hidden = true; $("tdMap").hidden = true; svg.style.display = ""; }
+  else {
+    const lats = s.map(p=>p.lat), lons = s.map(p=>p.lon);
+    const la0=Math.min(...lats), la1=Math.max(...lats), lo0=Math.min(...lons), lo1=Math.max(...lons);
+    const kx = Math.cos((la0+la1)/2*Math.PI/180);
+    const w = (lo1-lo0)*kx || 1e-6, h = (la1-la0) || 1e-6, sc = Math.min(296/w, 176/h);
+    const ox = 160 - w*sc/2, oy = 100 + h*sc/2;
+    const P = p => [ox + (p.lon-lo0)*kx*sc, oy - (p.lat-la0)*sc];
+    const mx = Math.max(1, ...s.map(p=>p.sp));
+    let segs = "";
+    for (let i=1;i<s.length;i++){ const [x0,y0]=P(s[i-1]), [x1,y1]=P(s[i]); const q = s[i].sp/mx;
+      segs += `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="color-mix(in oklab, var(--accent) ${Math.round(15+q*85)}%, var(--accent-light))" stroke-width="3" stroke-linecap="round"/>`; }
+    const [sx,sy]=P(s[0]), [ex,ey]=P(s[s.length-1]);
+    svg.innerHTML = `<defs><pattern id="mapg" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(14)"><path d="M26 0H0V26" fill="none" stroke="var(--line)" stroke-width="1"/></pattern></defs><rect width="320" height="200" fill="url(#mapg)"/>` + segs + `<circle cx="${sx}" cy="${sy}" r="5" fill="var(--surface)" stroke="var(--fg)" stroke-width="2"/><circle cx="${ex}" cy="${ey}" r="5" fill="var(--fg)" stroke="var(--surface)" stroke-width="2"/>
+      <text x="${sx+8}" y="${sy-6}" font-size="11" fill="var(--fg-2)">başlangıç</text><text x="${ex+8}" y="${ey-6}" font-size="11" fill="var(--fg-2)">bitiş</text>`;
+    $("tdOsm").hidden = false; $("tdOsm").href = `https://www.google.com/maps/search/?api=1&query=${s[0].lat},${s[0].lon}`;
+    drawTripMap(s);
+  }
+  const dur = t.dur || 1, xt = [0, dur/2, dur].map(x=>({x, label: durTxt(x)}));
+  lineChart($("chTripSpeed"), t.samples.map(p=>({x:p.t, y:p.sp*f})), {xMin:0, xMax:dur, yMin:0, yMaxAuto:20*f, xTicks:xt, h:130, tip:p=>`${durTxt(p.x)} · ${fmt(p.y,1)} ${uSpd()}`, aria:"Sürüş boyunca hız"});
+  lineChart($("chTripPower"), t.samples.map(p=>({x:p.t, y:p.p})), {xMin:0, xMax:dur, yMinAuto:-50, yMaxAuto:200, xTicks:xt, h:130, tip:p=>`${durTxt(p.x)} · ${fmt(p.y)} W`, aria:"Sürüş boyunca güç"});
+  const bins = [["durma",0,2],["2–5",2,5],["5–10",5,10],["10–15",10,15],["15–20",15,20],["20+",20,99]].map(([l,a,b]) => ({label:l, a, b, v:0}));
+  t.samples.forEach(p => { const b = bins.find(x => p.sp >= x.a && p.sp < x.b); if (b) b.v += 1/60; });
+  const totMin = bins.reduce((a,b)=>a+b.v,0) || 1;
+  barChart($("chTripHist"), bins.map(b => ({...b, note: b.v>=0.5 ? `%${Math.round(b.v/totMin*100)}` : ""})),
+    {h:150, tip:it=>`${it.label} km/s: ${fmt(it.v,1)} dk (%${Math.round(it.v/totMin*100)})`, aria:"Hız aralıklarında geçen süre"});
+  $("btnDelTrip").hidden = !!t.example; $("tdMsg").textContent = "";
+}
+function tripCsv(ts){
+  const rows = ["surus_id,baslangic,saniye,enlem,boylam,hiz_kmh,guc_w,batarya_yuzde"];
+  ts.forEach(t => t.samples.forEach(p => rows.push([t.id, new Date(t.start).toISOString(), p.t, p.lat??"", p.lon??"", p.sp, p.p, p.b??""].join(","))));
+  return rows.join("\n");
+}
+async function copyText(txt, msgEl, okMsg){
+  try { await navigator.clipboard.writeText(txt); if (msgEl) msgEl.textContent = okMsg; toast(okMsg || "Panoya kopyalandı"); }
+  catch(e){ const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch(_){} ta.remove(); if (msgEl) msgEl.textContent = ok ? okMsg : "Kopyalanamadı. Tarayıcı panoya erişime izin vermedi."; }
+}
+
+/* ============ kayıt ============ */
+let rec = null, wakeLock = null, geoWatch = null, lastFix = null;
+async function startRec(){
+  rec = { id:"t"+Date.now(), start:Date.now(), samples:[], t0:performance.now() };
+  $("btnRecTxt").textContent = "Kaydı bitir"; $("recUse").setAttribute("href","#i-stop"); $("btnRec").classList.remove("primary"); $("btnRec").classList.add("danger");
+  $("recLive").hidden = false;
+  try { wakeLock = await navigator.wakeLock?.request("screen"); } catch(e){ wakeLock = null; }
+  if (mode === "ble") startGeo(); else $("gpsInfo").textContent = geoOn ? "Telefon konumu kaydediliyor." : "Demo: konum simüle ediliyor.";
+}
+function recSample(){
+  if (!rec) return;
+  const t = Math.round((performance.now()-rec.t0)/1000);
+  if (rec.samples.length && rec.samples[rec.samples.length-1].t === t) return;
+  const pos = curPos();
+  rec.samples.push({ t, lat: pos?+pos.lat.toFixed(6):null, lon: pos?+pos.lon.toFixed(6):null, sp:+(S.speed||0).toFixed(1), p:Math.round(S.power||0), b:S.battPct });
+  const dist = rec.samples.length>1 ? rec.samples.reduce((a,p,i,arr)=> i && p.lat!=null && arr[i-1].lat!=null ? a+hav(arr[i-1],p) : a, 0) : 0;
+  $("recInfo").textContent = `${durTxt(t)} · ${fmt(dist/1000*kmF(),2)} ${uDist()}`;
+}
+function stopRec(){
+  if (!rec) return;
+  if (rec.samples.length >= 5){
+    const tr = finishTrip({ id:rec.id, start:rec.start, samples:rec.samples });
+    myTrips.unshift(tr); store.set("d38e.trips", myTrips); selTrip = tr.id;
+  }
+  rec = null; $("btnRecTxt").textContent = "Kaydı başlat"; $("recUse").setAttribute("href","#i-rec"); $("btnRec").classList.add("primary"); $("btnRec").classList.remove("danger");
+  $("recLive").hidden = true;
+  try { wakeLock && wakeLock.release(); } catch(e){} wakeLock = null;
+  $("gpsInfo").textContent = "Kayıt Sürüşler sekmesine eklendi."; toast("Sürüş kaydedildi");
+}
+
+/* ============ hata kodları ============ */
+const ERR = {
+  10:["Gösterge ile kontrolcü arasında iletişim yok","Gidondaki kablo bağlantısını kontrol edin, sorun sürerse servis."],
+  11:["Motor A fazı akımı anormal","Motor kablosu veya kontrolcü arızası olabilir. Servis."],
+  12:["Motor B fazı akımı anormal","Motor kablosu veya kontrolcü arızası olabilir. Servis."],
+  13:["Motor C fazı akımı anormal","Motor kablosu veya kontrolcü arızası olabilir. Servis."],
+  14:["Gaz kolu anormal","Açarken gaza basmayın. Sorun sürerse gaz kolu değişebilir."],
+  15:["Fren kolu anormal","Açarken frene basmayın. Fren sensörünü kontrol ettirin."],
+  18:["Motor hall sensörü anormal","Motor kablosu veya sensör arızası. Servis."],
+  21:["Batarya ile iletişim hatası","Batarya bağlantısı veya BMS arızası olabilir. Servis."],
+  22:["Batarya kodu anormal","BMS yazılım hatası. Servis."],
+  23:["Batarya seri numarası anormal","BMS değişmişse eşleştirme gerekir. Servis."],
+  24:["Besleme voltajı anormal","Şarj cihazını ve bataryayı kontrol ettirin."],
+  26:["Flash bellek hatası","Kontrolcü yazılımı. Firmware güncellemesi veya servis."],
+  27:["Kontrolcü parola hatası","Kontrolcü yazılımı. Servis."],
+  28:["Yüksek taraf MOSFET hatası","Kontrolcü donanım arızası. Servis."],
+  29:["Düşük taraf MOSFET hatası","Kontrolcü donanım arızası. Servis."],
+  31:["Kontrolcü yazılım hatası","Scooter'ı kapatıp açın, sürerse firmware güncellemesi."],
+  35:["Araç seri numarası hatası","Servis."],
+  39:["Batarya sıcaklık sensörü hatası","Servis."],
+  40:["Kontrolcü aşırı ısındı","Durup soğumasını bekleyin, uzun yokuşlarda dinlendirin."]
+};
+
+/* ============ Ninebot protokolü ============ */
+const NUS = "6e400001-b5a3-f393-e0a9-e50e24dcca9e", NUS_TX = "6e400002-b5a3-f393-e0a9-e50e24dcca9e", NUS_RX = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+const APP = 0x3E, ESC = 0x20, BMS = 0x22;
+function nbPacket(body){ // body: [len, src, dst, cmd, arg, ...data]
+  let s = 0; for (const b of body) s += b; s = (~s) & 0xFFFF;
+  return Uint8Array.from([0x5A, 0xA5, ...body, s & 0xFF, s >> 8]);
+}
+const nbRead = (dst, reg, nBytes) => nbPacket([1, APP, dst, 0x01, reg, nBytes]);
+const nbWrite = (dst, reg, val) => nbPacket([2, APP, dst, 0x03, reg, val & 0xFF, val >> 8]);
+let rxBuf = [];
+function nbFeed(bytes){
+  rxBuf.push(...bytes);
+  for (;;){
+    let i = 0; while (i < rxBuf.length-1 && !(rxBuf[i]===0x5A && rxBuf[i+1]===0xA5)) i++;
+    if (i) rxBuf.splice(0, i);
+    if (rxBuf.length < 9) return;
+    const len = rxBuf[2], total = len + 9;
+    if (rxBuf.length < total) return;
+    const fr = rxBuf.splice(0, total);
+    let s = 0; for (let k=2;k<total-2;k++) s += fr[k]; s = (~s) & 0xFFFF;
+    if ((fr[total-2] | fr[total-1]<<8) !== s){ logLine("sys", "Sağlama toplamı tutmayan çerçeve atlandı"); continue; }
+    frames++; $("dvFrames").textContent = frames; setProto("ok");
+    nbHandle(fr[3], fr[4], fr[5], fr[6], fr.slice(7, 7+len));
+  }
+}
+function nbHandle(src, dst, cmd, reg, data){
+  if (cmd !== 0x04 && cmd !== 0x01) return;
+  const isBms = src === BMS || src === 0x25;
+  const u16 = o => data[o] | (data[o+1]<<8), s16 = o => { const v = u16(o); return v>0x7FFF ? v-0x10000 : v; };
+  for (let o = 0; o+1 < data.length; o += 2){
+    const r = reg + o/2;
+    if (isBms){
+      if (r===0x17) S.fw.BMS = verTxt(u16(o));
+      else if (r===0x18) S.designCap = u16(o);
+      else if (r===0x19) S.fullCap = u16(o);
+      else if (r===0x1B) S.cycles = u16(o);
+      else if (r===0x31) S.remainCap = u16(o);
+      else if (r===0x32) S.battPct = u16(o);
+      else if (r===0x33) S.current = s16(o)/100;
+      else if (r===0x34) S.voltage = u16(o)/100;
+      else if (r===0x35){ S.tBat = Math.max(data[o], data[o+1]) - 20; }
+      else if (r===0x3B) S.health = u16(o);
+      else if (r>=0x40 && r<0x40+CELLS) S.cells[r-0x40] = u16(o);
+    } else {
+      if (r===0x1A) S.fw.ESC = verTxt(u16(o));
+      else if (r===0xB0) S.error = u16(o);
+      else if (r===0xB4) S.battPct = S.battPct ?? u16(o);
+      else if (r===0xB5) S.speed = Math.abs(s16(o))/10;
+      else if (r===0xB7) S.odo = u16(o) | (u16(o+2)<<16);
+      else if (r===0xB9) S.trip = u16(o)*10;
+      else if (r===0xBA) S.tripTime = u16(o);
+      else if (r===0xBB) S.tCtl = s16(o)/10;
+      else if (r===0x25) S.range = u16(o)/100;
+    }
+  }
+  if (S.voltage!=null && S.current!=null) S.power = S.voltage*S.current;
+  if (S.fullCap && S.designCap && S.health==null) S.health = Math.round(S.fullCap/S.designCap*100);
+  S.maxSpeed = Math.max(S.maxSpeed, S.speed||0);
+}
+const verTxt = v => `${(v>>8)&0xF}.${(v>>4)&0xF}.${v&0xF}`;
+const POLL = [ () => nbRead(ESC, 0xB0, 0x20), () => nbRead(BMS, 0x31, 0x0A), () => nbRead(BMS, 0x40, CELLS*2), () => nbRead(ESC, 0x25, 0x02), () => nbRead(BMS, 0x17, 0x0A), () => nbRead(ESC, 0x1A, 0x02) ];
+
+/* ============ Web Bluetooth ============ */
+let mode = "demo", dev = null, txChar = null, rxCount = 0, frames = 0, pollTimer = null, pollIdx = 0, protoTimer = null;
+const btAvail = !!(navigator.bluetooth && navigator.bluetooth.requestDevice);
+function setConn(kind, text){ const p = $("connPill"); p.className = "pill " + kind; $("connText").textContent = text; }
+function setProto(k){
+  const p = $("protoPill");
+  if (k==="ok"){ p.className="pill ok"; p.textContent="Ninebot, şifresiz"; clearTimeout(protoTimer); }
+  else if (k==="enc"){ p.className="pill warn"; p.textContent="! Şifreli görünüyor"; }
+  else if (k==="none"){ p.className="pill warn"; p.textContent="! Yanıt yok"; }
+  else { p.className="pill idle"; p.textContent="Protokol bilinmiyor"; }
+}
+function logLine(kind, txt){
+  const el = $("log"), d = document.createElement("div"); d.className = kind;
+  const ts = new Date().toLocaleTimeString("tr-TR",{hour12:false});
+  d.textContent = `${ts} ${kind==="tx"?"→":kind==="rx"?"←":"·"} ${txt}`;
+  el.appendChild(d); while (el.childNodes.length > 400) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+async function send(bytes){
+  if (!txChar){ logLine("sys","Gönderilemedi: yazılabilir karakteristik yok"); return false; }
+  logLine("tx", hex(bytes));
+  try {
+    for (let i=0;i<bytes.length;i+=20){ const ch = bytes.slice(i,i+20);
+      if (txChar.writeValueWithoutResponse && txChar.properties.writeWithoutResponse) await txChar.writeValueWithoutResponse(ch); else await txChar.writeValue(ch); }
+    return true;
+  } catch(e){ logLine("sys","Yazma hatası: "+e.message); return false; }
+}
+async function connect(){
+  if (!btAvail){ showTab("gelistirici"); logLine("sys","Bu tarayıcı Web Bluetooth desteklemiyor."); return; }
+  try {
+    setConn("idle","Cihaz seçiliyor…");
+    dev = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:[NUS, "battery_service", "device_information", 0xFE95, 0xFEE7, 0xFFE0] });
+    $("dvName").textContent = dev.name || "(isimsiz)";
+    dev.addEventListener("gattserverdisconnected", onDisconnected);
+    setConn("idle","Bağlanıyor…"); $("dvState").textContent = "Bağlanıyor…";
+    const gatt = await dev.gatt.connect();
+    stopDemo(true); mode = "ble"; resetData(); startGeo();
+    setConn("ok", "Bağlı: " + (dev.name || "scooter")); $("dvState").textContent = "Bağlı";
+    $("btnDisconnect").disabled = false; $("btnConnectTxt").textContent = "Yeniden bağlan";
+    logLine("sys", `Bağlandı: ${dev.name||"(isimsiz)"}`);
+    const svcs = await gatt.getPrimaryServices();
+    const list = [];
+    for (const s of svcs){
+      const chars = await s.getCharacteristics().catch(()=>[]);
+      list.push(`<div class="svc">${s.uuid}${s.uuid===NUS?' <b>(Nordic UART)</b>':''}${chars.map(c=>{ const p=c.properties; const fl=[p.read&&"okuma",p.write&&"yazma",p.writeWithoutResponse&&"yanıtsız yazma",p.notify&&"bildirim",p.indicate&&"indicate"].filter(Boolean).join(", "); return `<div>└ ${c.uuid} · ${fl}</div>`; }).join("")}</div>`);
+      for (const c of chars){
+        if (c.properties.notify || c.properties.indicate){
+          try { await c.startNotifications(); c.addEventListener("characteristicvaluechanged", e => onRx(new Uint8Array(e.target.value.buffer))); } catch(e){ logLine("sys", `Bildirim açılamadı ${c.uuid}: ${e.message}`); }
+        }
+        if (c.uuid === NUS_TX) txChar = c;
+        else if (!txChar && (c.properties.writeWithoutResponse || c.properties.write) && s.uuid === NUS) txChar = c;
+      }
+      logLine("sys", `Servis: ${s.uuid} (${chars.length} karakteristik)`);
+    }
+    $("svcList").innerHTML = list.join("") || '<span class="muted small">Erişilebilir servis bulunamadı. Servis UUID\'sini Claude\'a iletin, listeye eklensin.</span>';
+    if (!svcs.find(s=>s.uuid===NUS)) logLine("sys","Nordic UART servisi bulunamadı. Servis listesini kopyalayıp Claude'a getirin.");
+    if ($("pollOn").checked && txChar){
+      pollTimer = setInterval(() => { send(POLL[pollIdx++ % POLL.length]()); }, 350);
+      protoTimer = setTimeout(() => { if (!frames) setProto(rxCount ? "enc" : "none"); }, 4000);
+    }
+  } catch(e){
+    if (e.name === "NotFoundError") { setConn(mode==="demo"?"demo":"idle", mode==="demo"?"Demo verisi":"Bağlı değil"); logLine("sys","Cihaz seçilmedi."); return; }
+    setConn("crit","Bağlantı hatası"); logLine("sys", `Hata: ${e.name}: ${e.message}`);
+    if (/permission|policy|allowed|SecurityError/i.test(e.name+e.message)) { showTab("gelistirici"); $("btSupportText").innerHTML = "Bu önizleme penceresi Bluetooth'a izin vermiyor. Sayfayı GitHub Pages gibi kendi adresinizde açın (bilgisayarda Chrome, iPhone'da Bluefy)."; }
+  }
+}
+function onRx(bytes){
+  rxCount++; $("dvRx").textContent = rxCount;
+  logLine("rx", hex(bytes));
+  nbFeed(bytes);
+}
+function onDisconnected(){
+  clearInterval(pollTimer); pollTimer = null; txChar = null;
+  setConn("warn","Bağlantı koptu"); $("dvState").textContent = "Bağlantı koptu"; $("btnDisconnect").disabled = true;
+  logLine("sys","Bağlantı koptu."); savePark(true);
+}
+function resetData(){
+  Object.assign(S, { speed:0, maxSpeed:0, battPct:null, voltage:null, current:null, power:null, tCtl:null, tBat:null, odo:null, trip:0, tripTime:0, range:null, cells:[], cycles:null, designCap:null, fullCap:null, remainCap:null, health:null, error:0, fw:{}, serial:null });
+  hist.speed.length = hist.power.length = hist.batt.length = 0; rxCount = 0; frames = 0; rxBuf = []; setProto("idle"); trail.length = 0;
+}
+
+/* ============ demo kontrolü ============ */
+let demoTimer = null, tick = 0;
+function startDemo(){
+  if (mode === "ble" && dev && dev.gatt.connected) return;
+  mode = "demo"; resetData(); sim = makeSim(Date.now()%100000); simDevice();
+  // geçmişi doldur ki grafikler ilk anda dolu görünsün
+  for (let i=0;i<HIST_SEC*2;i++){ simStep(sim, S, 0.5); tick += 0.5; pushHist(tick); }
+  demoTimer = setInterval(() => { simStep(sim, S, 0.5); tick += 0.5; pushHist(tick); recSample(); renderLive(); }, 500);
+  setConn("demo","Demo verisi"); setDemoBtn(true);
+  renderAll();
+}
+function stopDemo(silent){
+  clearInterval(demoTimer); demoTimer = null;
+  if (!silent){ mode = "idle"; resetData(); setConn("idle","Bağlı değil"); renderAll(); }
+  setDemoBtn(false);
+}
+// gerçek bağlantıda ekran yenileme
+setInterval(() => { if (mode==="ble"){ tick += 0.5; pushHist(tick); recSample(); renderLive(); } }, 500);
+
+/* ============ harita ve konum ============ */
+let mapsOK = false, liveMap = null, LL = null, tripMap = null, tripLayer = null, follow = true, geoOn = false, firstFix = false;
+const trail = [];
+let park = store.get("d38e.park", null);
+function curPos(){ if (geoOn && lastFix) return lastFix; if (mode === "demo") return { lat:sim.lat, lon:sim.lon }; return null; }
+function trackPos(){
+  const p = curPos(); if (!p) return;
+  const l = trail[trail.length-1];
+  if (!l || hav(l, p) > 2){ trail.push({ lat:p.lat, lon:p.lon, sp:S.speed||0 }); if (trail.length > 900) trail.shift(); }
+}
+function startGeo(){
+  if (geoWatch != null) return;
+  if (!navigator.geolocation){ toast("Bu tarayıcıda konum özelliği yok"); return; }
+  firstFix = true;
+  try {
+    geoWatch = navigator.geolocation.watchPosition(p => {
+      lastFix = { lat:p.coords.latitude, lon:p.coords.longitude, acc:p.coords.accuracy };
+      if (firstFix){ firstFix = false; trail.length = 0; follow = true; }
+      geoOn = true; $("gpsInfo").textContent = `GPS ±${Math.round(p.coords.accuracy)} m`; setGeoBtn();
+    }, e => { stopGeo(); toast("Konum izni alınamadı"); $("gpsInfo").textContent = "GPS izni yok, rota kaydedilmeyecek."; }, { enableHighAccuracy:true, maximumAge:2000 });
+  } catch(e){ geoWatch = null; toast("Konum kullanılamıyor"); }
+  setGeoBtn();
+}
+function stopGeo(){
+  try { if (geoWatch != null) navigator.geolocation.clearWatch(geoWatch); } catch(e){}
+  geoWatch = null; geoOn = false; lastFix = null; trail.length = 0; follow = true; setGeoBtn();
+}
+function setGeoBtn(){ $("btnGeoTxt").textContent = geoWatch != null ? (geoOn ? "Telefon konumunu kapat" : "Konum bekleniyor…") : "Telefon konumunu kullan"; }
+function savePark(auto){
+  const p = curPos();
+  if (!p){ if (!auto) toast("Konum bilinmiyor. Önce telefon konumunu açın."); return; }
+  park = { lat:+p.lat.toFixed(6), lon:+p.lon.toFixed(6), t:Date.now(), demo: !(geoOn && lastFix) };
+  store.set("d38e.park", park); toast("Park yeri kaydedildi"); renderLoc();
+}
+function agoTxt(t){ const m = Math.round((Date.now()-t)/60000); return m < 1 ? "az önce" : m < 60 ? `${m} dk önce` : m < 1440 ? `${Math.round(m/60)} saat önce` : `${Math.round(m/1440)} gün önce`; }
+function hexLerp(a, b, q){ const pa = parseInt(a.slice(1),16), pb = parseInt(b.slice(1),16); let o = "#";
+  for (const sh of [16,8,0]){ const x = (pa>>sh)&255, y = (pb>>sh)&255; o += Math.round(x+(y-x)*q).toString(16).padStart(2,"0"); } return o; }
+const osmTiles = () => L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom:19, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> katkıcıları' });
+function svgTrail(svg, pts){
+  if (pts.length < 2){ svg.innerHTML = `<text x="160" y="104" text-anchor="middle" fill="var(--muted)" font-size="12">Konum bekleniyor</text>`; return; }
+  const lats = pts.map(p=>p.lat), lons = pts.map(p=>p.lon), la0 = Math.min(...lats), la1 = Math.max(...lats), lo0 = Math.min(...lons), lo1 = Math.max(...lons);
+  const kx = Math.cos((la0+la1)/2*Math.PI/180), w = (lo1-lo0)*kx || 1e-6, h = (la1-la0) || 1e-6, sc = Math.min(290/w, 170/h, 2.2e5);
+  const ox = 160 - w*sc/2, oy = 100 + h*sc/2, P = p => [ox + (p.lon-lo0)*kx*sc, oy - (p.lat-la0)*sc];
+  const d = pts.map((p,i) => { const [x,y] = P(p); return `${i?"L":"M"}${x.toFixed(1)},${y.toFixed(1)}`; }).join("");
+  const [cx, cy] = P(pts[pts.length-1]);
+  let pk = ""; if (park){ const [px,py] = P(park); if (px>4 && px<316 && py>4 && py<196) pk = `<rect x="${px-7}" y="${py-7}" width="14" height="14" rx="4" fill="var(--t-indigo)"/><text x="${px}" y="${py+4}" text-anchor="middle" font-size="10" font-weight="700" fill="var(--on-tile)">P</text>`; }
+  svg.innerHTML = `<defs><pattern id="mapg2" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(14)"><path d="M26 0H0V26" fill="none" stroke="var(--line)" stroke-width="1"/></pattern></defs><rect width="320" height="200" fill="url(#mapg2)"/>
+    <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${pk}
+    <circle cx="${cx}" cy="${cy}" r="11" fill="var(--accent)" fill-opacity=".22"/><circle cx="${cx}" cy="${cy}" r="5.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>`;
+}
+function renderLoc(){
+  const p = curPos();
+  $("locInfo").textContent = !p ? "Konum kapalı" : (geoOn ? `Telefon konumu · ±${Math.round(lastFix.acc||0)} m` : "Demo konumu (simülasyon)");
+  if (park){
+    const dist = p ? hav(p, park) : null;
+    $("parkTxt").textContent = `${agoTxt(park.t)} kaydedildi${dist!=null ? ` · buradan ${dist < 1000 ? Math.round(dist)+" m" : fmt(dist/1000,1)+" km"}` : ""}${park.demo ? " · demo konumu" : ""}`;
+    $("parkNav").hidden = false; $("parkNav").href = `https://www.google.com/maps/dir/?api=1&destination=${park.lat},${park.lon}&travelmode=walking`;
+  }
+  if (activeTab !== "panel" || rideOpen) return;
+  if (!mapsOK){ svgTrail($("liveSvg"), trail); return; }
+  if (!liveMap){
+    $("liveMap").hidden = false; $("liveSvg").style.display = "none"; $("mapNote").hidden = true; $("btnCenter").hidden = false; $("btnRangeFit").hidden = false;
+    liveMap = L.map("liveMap", { zoomControl:true }).setView(p ? [p.lat,p.lon] : [39.0, 35.0], p ? 16 : 5);
+    osmTiles().addTo(liveMap);
+    const ac = css("--accent") || "#2756E8";
+    LL = { range: L.circle([0,0], { radius:1, color:ac, weight:1.5, dashArray:"6 6", fillColor:ac, fillOpacity:.05, interactive:false }),
+           trail: L.polyline([], { color:ac, weight:4, opacity:.9, lineCap:"round" }),
+           park:  L.circleMarker([0,0], { radius:9, color:"#fff", weight:2, fillColor:"#4B4ACF", fillOpacity:1 }),
+           me:    L.circleMarker([0,0], { radius:7, color:"#fff", weight:2.5, fillColor:ac, fillOpacity:1 }) };
+    LL.park.bindTooltip("Park yeri"); LL.me.bindTooltip("Şu anki konum");
+    liveMap.on("dragstart", () => { follow = false; });
+  }
+  const on = (layer, show) => { if (show && !liveMap.hasLayer(layer)) layer.addTo(liveMap); if (!show && liveMap.hasLayer(layer)) liveMap.removeLayer(layer); };
+  on(LL.trail, trail.length > 1); LL.trail.setLatLngs(trail.map(t => [t.lat, t.lon]));
+  on(LL.me, !!p); on(LL.range, !!p && S.range > 0); on(LL.park, !!park);
+  if (p){ LL.me.setLatLng([p.lat,p.lon]); if (S.range > 0){ LL.range.setLatLng([p.lat,p.lon]); LL.range.setRadius(S.range*1000); } if (follow) liveMap.setView([p.lat,p.lon], liveMap.getZoom(), { animate:true }); }
+  if (park) LL.park.setLatLng([park.lat, park.lon]);
+}
+function drawTripMap(pts){
+  const box = $("tdMap"), svg = $("tdRoute");
+  if (!mapsOK){ box.hidden = true; svg.style.display = ""; return; }
+  box.hidden = false; svg.style.display = "none";
+  if (!tripMap){ tripMap = L.map("tdMap", { zoomControl:true }); osmTiles().addTo(tripMap); tripLayer = L.layerGroup().addTo(tripMap); }
+  tripLayer.clearLayers();
+  const lo = css("--accent-light") || "#BFCDF7", hi = css("--accent") || "#2756E8", mx = Math.max(1, ...pts.map(p=>p.sp)), step = Math.max(1, Math.ceil(pts.length/300));
+  const dark = !/^#[0-9a-f]{6}$/i.test(lo) || !/^#[0-9a-f]{6}$/i.test(hi);
+  for (let i = 0; i < pts.length-1; i += step){
+    const seg = pts.slice(i, i+step+1), q = seg.reduce((a,p)=>a+p.sp,0)/seg.length/mx;
+    L.polyline(seg.map(p=>[p.lat,p.lon]), { color: dark ? hi : hexLerp(lo, hi, 0.25+0.75*q), weight:5, opacity:.95, lineCap:"round" }).addTo(tripLayer);
+  }
+  const a = pts[0], b = pts[pts.length-1];
+  L.circleMarker([a.lat,a.lon], { radius:7, color:"#131922", weight:2.5, fillColor:"#fff", fillOpacity:1 }).bindTooltip("Başlangıç").addTo(tripLayer);
+  L.circleMarker([b.lat,b.lon], { radius:7, color:"#fff", weight:2.5, fillColor:"#131922", fillOpacity:1 }).bindTooltip("Bitiş").addTo(tripLayer);
+  tripMap.invalidateSize(); tripMap.fitBounds(L.latLngBounds(pts.map(p=>[p.lat,p.lon])), { padding:[24,24] });
+}
+(function probeMaps(){
+  if (typeof L === "undefined") return;
+  const im = new Image();
+  im.onload = () => { mapsOK = true; renderLoc(); if (activeTab === "suruslar") renderTripDetail(); };
+  im.onerror = () => { mapsOK = false; };
+  im.src = "https://tile.openstreetmap.org/1/0/0.png";
+})();
+$("btnGeo").addEventListener("click", () => geoWatch != null ? stopGeo() : startGeo());
+$("btnPark").addEventListener("click", () => savePark(false));
+$("btnCenter").addEventListener("click", () => { follow = true; const p = curPos(); if (p && liveMap) liveMap.setView([p.lat,p.lon], Math.max(liveMap.getZoom(), 16)); });
+$("btnRangeFit").addEventListener("click", () => { if (liveMap && LL && liveMap.hasLayer(LL.range)){ follow = false; liveMap.fitBounds(LL.range.getBounds(), { padding:[16,16] }); } else toast("Menzil verisi yok"); });
+
+/* ============ scooter adı & satın alma ============ */
+function scName(){ return store.get("d38e.name", "") || (typeof dev!=="undefined" && dev && dev.name) || "Scooter'ım"; }
+function openRename(){ showTab("ariza"); $("renameRow").hidden = false; $("nameIn").value = scName(); $("nameIn").focus(); $("nameIn").select(); }
+function saveName(){ const v = $("nameIn").value.trim().slice(0,24); store.set("d38e.name", v); $("renameRow").hidden = true; renderDevice(); toast(v ? "Ad kaydedildi" : "Varsayılan ada dönüldü"); }
+$("btnRename").addEventListener("click", openRename);
+$("heroName").addEventListener("click", openRename);
+$("btnNameSave").addEventListener("click", saveName);
+$("btnNameCancel").addEventListener("click", () => { $("renameRow").hidden = true; });
+$("nameIn").addEventListener("keydown", e => { if (e.key === "Enter") saveName(); if (e.key === "Escape") $("renameRow").hidden = true; });
+$("buyDate").addEventListener("change", () => { store.set("d38e.buy", $("buyDate").value); renderDevice(); });
+
+/* ============ sekmeler & olaylar ============ */
+const TABS = ["panel","batarya","suruslar","ariza","kontrol","gelistirici"];
+function showTab(t){
+  if (!TABS.includes(t)) t = "panel";
+  activeTab = t;
+  TABS.forEach(x => { $("tab-"+x).hidden = x!==t; });
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab===t));
+  if (location.hash.slice(1) !== t) history.replaceState(null, "", "#"+t);
+  renderAll();
+  if (liveMap) liveMap.invalidateSize();
+}
+function renderLive(){ if (rideOpen){ renderRideSlow(); return; } if (activeTab==="panel") renderPanel(); else if (activeTab==="batarya") renderBattery(); else if (activeTab==="ariza") renderErrors(); else renderPanel(); }
+function renderAll(){ renderPanel(); renderBattery(); renderErrors(); renderControls(); if (activeTab==="suruslar") renderTrips(); }
+
+document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => { showTab(b.dataset.tab); window.scrollTo(0, 0); try { navigator.vibrate && navigator.vibrate(8); } catch(e){} }));
+window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (h === "surus"){ if (!rideOpen) openRide(); } else { if (rideOpen) closeRide(); showTab(h); } });
+$("btnRide").addEventListener("click", openRide);
+$("fabRide").addEventListener("click", openRide);
+$("rmClose").addEventListener("click", closeRide);
+$("rmRec").addEventListener("click", () => { rec ? stopRec() : startRec(); renderRideSlow(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && rideOpen) closeRide(); });
+$("btnConnect").addEventListener("click", connect);
+$("btnDemo").addEventListener("click", () => demoTimer ? stopDemo() : startDemo());
+$("btnDisconnect").addEventListener("click", () => { try { dev && dev.gatt.disconnect(); } catch(e){} });
+$("btnRec").addEventListener("click", () => rec ? stopRec() : startRec());
+$("tripList").addEventListener("click", e => { const b = e.target.closest(".trip"); if (!b) return; selTrip = b.dataset.id; renderTrips(); });
+$("kwhPrice").value = store.get("d38e.price", 3.0);
+$("kwhPrice").addEventListener("input", () => { store.set("d38e.price", +$("kwhPrice").value); renderTrips(); });
+$("btnCsvAll").addEventListener("click", () => copyText(tripCsv(allTrips()), $("tdMsg"), "Tüm sürüşler CSV olarak panoya kopyalandı."));
+$("btnCsvOne").addEventListener("click", () => { const t = allTrips().find(x=>x.id===selTrip); if (t) copyText(tripCsv([t]), $("tdMsg"), "Sürüş CSV olarak panoya kopyalandı."); });
+let delArmed = false;
+$("btnDelTrip").addEventListener("click", () => {
+  if (!delArmed){ delArmed = true; $("btnDelTrip").textContent = "Silmek için tekrar basın"; setTimeout(()=>{ delArmed=false; $("btnDelTrip").textContent="Sil"; }, 3000); return; }
+  delArmed = false; $("btnDelTrip").textContent = "Sil";
+  myTrips = myTrips.filter(t=>t.id!==selTrip); store.set("d38e.trips", myTrips); selTrip = null; renderTrips();
+});
+$("btnSimErr").addEventListener("click", () => { if (mode!=="demo") return; const ks = Object.keys(ERR); S.error = +ks[Math.floor(Math.random()*ks.length)]; renderAll(); });
+$("btnClrErr").addEventListener("click", () => { if (mode!=="demo") return; S.error = 0; renderAll(); });
+
+// kontroller
+async function control(name, reg, val, apply){
+  if (mode === "ble"){
+    if (!$("ctlArm").checked){ $("ctlMsg").textContent = "Komut gönderilmedi: önce deneysel komut iznini işaretleyin."; renderControls(); return; }
+    if (reg == null){ $("ctlMsg").textContent = `${name}: bu komutun scooter'daki adresi henüz bilinmiyor. Protokolü çözünce eklenecek.`; renderControls(); return; }
+    const ok = await send(nbWrite(ESC, reg, val));
+    $("ctlMsg").textContent = ok ? `${name} komutu gönderildi (adres 0x${reg.toString(16).toUpperCase()}, değer ${val}). Scooter'ın tepkisini kontrol edin.` : `${name} komutu gönderilemedi.`;
+    if (!ok){ renderControls(); return; }
+  } else $("ctlMsg").textContent = `Demo: ${name} değiştirildi.`;
+  apply(); renderControls();
+}
+$("cLock").addEventListener("change", e => { const v = e.target.checked; control(v?"Koruma modu açık":"Koruma modu kapalı", v?0x70:0x71, 1, ()=>S.lock=v); });
+$("cWalk").addEventListener("change", e => { const v = e.target.checked; control(v?"Yürüyüş modu açık":"Yürüyüş modu kapalı", null, v?1:0, ()=>S.walk=v); });
+$("cLight").addEventListener("change", e => { const v = e.target.checked; control("Arka lamba", 0x7D, v?2:0, ()=>S.light=v); });
+$("cCruise").addEventListener("change", e => { const v = e.target.checked; control("Cruise control", 0x7C, v?1:0, ()=>S.cruise=v); });
+$("cKers").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; const v = +b.dataset.v; control("Geri kazanım seviyesi", 0x7B, v, ()=>S.kers=v); });
+$("cUnit").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; unit = b.dataset.v; store.set("d38e.unit", unit); renderAll(); if (activeTab==="suruslar") renderTrips(); });
+
+// geliştirici
+$("btnCopyLog").addEventListener("click", () => {
+  const svc = Array.from(document.querySelectorAll("#svcList .svc")).map(x=>x.innerText).join("\n");
+  copyText(`Cihaz: ${$("dvName").textContent}\nServisler:\n${svc}\n\nLog:\n${$("log").innerText}`, null);
+  logLine("sys","Log panoya kopyalandı.");
+});
+$("btnClearLog").addEventListener("click", () => $("log").innerHTML = "");
+function parseHex(s){ const t = s.replace(/0x/gi,"").replace(/[^0-9a-f]/gi," ").trim().split(/\s+/).filter(Boolean); return t.map(x=>parseInt(x,16)).filter(n=>!isNaN(n)&&n<256); }
+$("btnSendHex").addEventListener("click", () => { const b = parseHex($("hexIn").value); if (b.length) send(Uint8Array.from(b)); });
+$("btnAddCs").addEventListener("click", () => { let b = parseHex($("hexIn").value); if (b[0]===0x5A && b[1]===0xA5) b = b.slice(2, 2 + 5 + b[2]); if (b.length >= 5) $("hexIn").value = hex(nbPacket(b)); });
+
+// destek mesajı
+$("btSupportText").innerHTML = btAvail
+  ? "Bu tarayıcı Web Bluetooth destekliyor. Scooter'ı açıp \"Scooter'a bağlan\"a basabilirsiniz."
+  : "Bu tarayıcı Web Bluetooth desteklemiyor. Bilgisayarda <b>Chrome</b> veya <b>Edge</b>, iPhone'da <b>Bluefy</b> kullanın. Demo modu her yerde çalışır.";
+if (!btAvail) $("btnConnect").title = "Bu tarayıcıda Bluetooth yok";
+$("btnRide").title = "Sürüş modu";
+
+window.addEventListener("resize", () => { if (rideOpen) fxResize(); renderAll(); if (activeTab==="suruslar") renderTrips(); });
+logLine("sys","Hazır. Demo verisi gösteriliyor.");
+startDemo();
+{ const h0 = location.hash.slice(1); showTab(h0 === "surus" ? "panel" : (h0 || "panel")); if (h0 === "surus") openRide(); }
+</script>
+
+</body>
+</html>
