@@ -627,6 +627,7 @@ input[type=date]{background:var(--surface);border:1px solid var(--line);border-r
           <tr><td class="muted">Çözülen Ninebot çerçevesi</td><td id="dvFrames" class="num">0</td></tr>
         </tbody></table></div>
         <label class="row"><input type="checkbox" id="pollOn" checked> Bağlanınca Ninebot okuma isteklerini otomatik gönder</label>
+        <label class="row"><input type="checkbox" id="showAll"> Listede tüm Bluetooth cihazlarını göster (scooter görünmüyorsa)</label>
         <div class="row"><button class="btn" id="btnDisconnect" type="button" disabled><svg class="ic" aria-hidden="true"><use href="#i-link"/></svg>Bağlantıyı kes</button></div>
         <h3>Servisler</h3>
         <div id="svcList" class="grid" style="gap:6px"><span class="muted small">Bağlandığınızda scooter'ın Bluetooth servisleri burada listelenir.</span></div>
@@ -1444,11 +1445,34 @@ async function send(bytes){
     return true;
   } catch(e){ logLine("sys","Yazma hatası: "+e.message); return false; }
 }
+/* Cihaz seçimi: önce adı NB / Ninebot ile başlayanları veya Nordic UART servisi olanları ister.
+   Tarayıcı bir seçeneği desteklemezse (TypeError vb.) daha basit seçenekle tekrar dener. */
+async function pickDevice(){
+  const OPT = [NUS, "battery_service", "device_information", 0xFE95, 0xFEE7, 0xFFE0];
+  const all = $("showAll").checked;
+  const tries = all
+    ? [ {acceptAllDevices:true, optionalServices:OPT}, {acceptAllDevices:true, optionalServices:[NUS]}, {acceptAllDevices:true} ]
+    : [ {filters:[{namePrefix:"NB"},{namePrefix:"Ninebot"},{services:[NUS]}], optionalServices:OPT},
+        {filters:[{namePrefix:"NB"},{namePrefix:"Ninebot"}], optionalServices:[NUS]},
+        {acceptAllDevices:true, optionalServices:[NUS]} ];
+  let last = null;
+  for (let i = 0; i < tries.length; i++){
+    try {
+      logLine("sys", `Cihaz aranıyor (deneme ${i+1}/${tries.length}${all ? ", tüm cihazlar" : ""})`);
+      return await navigator.bluetooth.requestDevice(tries[i]);
+    } catch(e){
+      last = e;
+      logLine("sys", `Deneme ${i+1} başarısız: ${e.name}: ${e.message}`);
+      if (e.name === "NotFoundError" || e.name === "AbortError") throw e; // kullanıcı vazgeçti veya cihaz yok
+    }
+  }
+  throw last;
+}
 async function connect(){
   if (!btAvail){ showTab("gelistirici"); logLine("sys","Bu tarayıcı Web Bluetooth desteklemiyor."); return; }
   try {
     setConn("idle","Cihaz seçiliyor…");
-    dev = await navigator.bluetooth.requestDevice({ acceptAllDevices:true, optionalServices:[NUS, "battery_service", "device_information", 0xFE95, 0xFEE7, 0xFFE0] });
+    dev = await pickDevice();
     $("dvName").textContent = dev.name || "(isimsiz)";
     dev.addEventListener("gattserverdisconnected", onDisconnected);
     setConn("idle","Bağlanıyor…"); $("dvState").textContent = "Bağlanıyor…";
@@ -1478,8 +1502,9 @@ async function connect(){
       protoTimer = setTimeout(() => { if (!frames) setProto(rxCount ? "enc" : "none"); }, 4000);
     }
   } catch(e){
-    if (e.name === "NotFoundError") { setConn(mode==="demo"?"demo":"idle", mode==="demo"?"Demo verisi":"Bağlı değil"); logLine("sys","Cihaz seçilmedi."); return; }
+    if (e.name === "NotFoundError") { setConn(mode==="demo"?"demo":"idle", mode==="demo"?"Demo verisi":"Bağlı değil"); logLine("sys",`Cihaz seçilmedi veya bulunamadı (${e.message})`); $("dvState").textContent = "Cihaz seçilmedi / bulunamadı"; toast("Cihaz seçilmedi veya bulunamadı"); return; }
     setConn("crit","Bağlantı hatası"); logLine("sys", `Hata: ${e.name}: ${e.message}`);
+    $("dvState").textContent = `Hata: ${e.name}: ${e.message}`; toast("Bağlantı hatası: " + e.message); showTab("gelistirici");
     if (/permission|policy|allowed|SecurityError/i.test(e.name+e.message)) { showTab("gelistirici"); $("btSupportText").innerHTML = "Bu önizleme penceresi Bluetooth'a izin vermiyor. Sayfayı GitHub Pages gibi kendi adresinizde açın (bilgisayarda Chrome, iPhone'da Bluefy)."; }
   }
 }
@@ -1491,7 +1516,7 @@ function onRx(bytes){
 function onDisconnected(){
   clearInterval(pollTimer); pollTimer = null; txChar = null;
   setConn("warn","Bağlantı koptu"); $("dvState").textContent = "Bağlantı koptu"; $("btnDisconnect").disabled = true;
-  logLine("sys","Bağlantı koptu."); savePark(true);
+  logLine("sys","Bağlantı koptu."); savePark(true); toast("Scooter bağlantısı koptu");
 }
 function resetData(){
   Object.assign(S, { speed:0, maxSpeed:0, battPct:null, voltage:null, current:null, power:null, tCtl:null, tBat:null, odo:null, trip:0, tripTime:0, range:null, cells:[], cycles:null, designCap:null, fullCap:null, remainCap:null, health:null, error:0, fw:{}, serial:null });
