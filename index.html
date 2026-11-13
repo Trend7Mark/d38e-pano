@@ -646,6 +646,14 @@ input[type=date]{background:var(--surface);border:1px solid var(--line);border-r
       </div>
     </div>
     <div class="card">
+      <div class="card-h"><h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg></span>Gen2 şifreli el sıkışma testi</h2><span id="hsPill" class="pill idle">Denenmedi</span></div>
+      <p class="small fg2" style="margin:0">Scooter düz metin isteklere cevap vermiyor; önce şifreli bir "merhaba" (PRE_COMM) bekliyor. Bu test, dokümandaki en olası 4 varyantı sırayla gönderir ve scooter'dan cevap gelip gelmediğine bakar. Scooter'da hiçbir ayarı değiştirmez, sadece bağlantı başlatma isteği gönderir.</p>
+      <div class="row">
+        <button class="btn primary" id="btnHs" type="button" disabled><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg>El sıkışma testini çalıştır</button>
+        <span class="small muted" id="hsMsg">Önce scooter'a bağlanın.</span>
+      </div>
+    </div>
+    <div class="card">
       <h2><span class="hic"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg></span>İlk bağlantıda ne yapmalı?</h2>
       <ol class="steps">
         <li>Segway uygulamasını tamamen kapatın. Scooter aynı anda tek bağlantı kabul eder.</li>
@@ -1488,6 +1496,7 @@ async function connect(){
     stopDemo(true); mode = "ble"; resetData(); startGeo();
     setConn("ok", "Bağlı: " + (dev.name || "scooter")); $("dvState").textContent = "Bağlı";
     $("btnDisconnect").disabled = false; $("btnConnectTxt").textContent = "Yeniden bağlan";
+    $("btnHs").disabled = false; $("hsMsg").textContent = "Hazır. Düğmeye basıp testi başlatın.";
     logLine("sys", `Bağlandı: ${dev.name||"(isimsiz)"}`);
     const svcs = await gatt.getPrimaryServices();
     const list = [];
@@ -1521,14 +1530,81 @@ async function connect(){
     if (/permission|policy|allowed|SecurityError/i.test(errTxt(e))) { showTab("gelistirici"); $("btSupportText").innerHTML = "Bu önizleme penceresi Bluetooth'a izin vermiyor. Sayfayı GitHub Pages gibi kendi adresinizde açın (bilgisayarda Chrome, iPhone'da Bluefy)."; }
   }
 }
+let hsTest = false, hsGot = [];
 function onRx(bytes, tag = ""){
   rxCount++; $("dvRx").textContent = rxCount;
   logLine("rx", tag + hex(bytes));
+  if (hsTest){ hsGot.push({tag, bytes:Array.from(bytes)}); return; }
   if (!tag) nbFeed(bytes);
+}
+
+/* ============ Gen2 (Encryption2) el sıkışma testi ============ */
+/* Dokümandaki PRE_COMM (0x5B) isteğinin non-SN varyantları. Scooter'da ayar değiştirmez;
+   amaç, scooter'ın şifreli el sıkışmaya cevap verip vermediğini ölçmek. Kaynak: nootnooot Segway-Ninebot BLE. */
+const FW_DATA = Uint8Array.from([0x97,0xCF,0xB8,0x02,0x84,0x41,0x43,0xDE,0x56,0x00,0x2B,0x3B,0x34,0x78,0x0A,0x5D]);
+async function sha1(bytes){ return new Uint8Array(await crypto.subtle.digest("SHA-1", bytes)); }
+async function aesEcbBlock(key16, block16){
+  const k = await crypto.subtle.importKey("raw", key16, {name:"AES-CBC"}, false, ["encrypt"]);
+  const out = new Uint8Array(await crypto.subtle.encrypt({name:"AES-CBC", iv:new Uint8Array(16)}, k, block16));
+  return out.slice(0,16);
+}
+async function buildPreComm(key2, cksumOverCipher){
+  const nm = new TextEncoder().encode((dev && dev.name) || "");
+  const key1 = new Uint8Array(16); key1.set(nm.slice(0,16));
+  const k2 = new Uint8Array(16); k2.set(key2.slice(0,16));
+  const both = new Uint8Array(32); both.set(key1,0); both.set(k2,16);
+  const aesKey = (await sha1(both)).slice(0,16);
+  const ks = await aesEcbBlock(aesKey, new Uint8Array(16));
+  const plain = Uint8Array.from([0x3E,0x04,0x5B,0x00]); // BT_ID, TARGET=BLE, CMD=PRE_COMM, INDEX
+  const enc = plain.map((b,i)=> b ^ ks[i]);
+  const src = cksumOverCipher ? enc : plain;
+  let sum = 0x00; for (const b of src) sum += b;          // LENGTH(0) + gövde
+  const ck = (~sum) & 0xFFFF;
+  return Uint8Array.from([0x5A,0xA5,0x00, ...enc, 0x00,0x00, ck&0xFF, (ck>>8)&0xFF, 0x00,0x00]);
+}
+async function runHandshakeTest(){
+  if (mode !== "ble" || !txChar){ toast("Önce scooter'a bağlanın"); return; }
+  if (!(crypto.subtle)){ logLine("sys","Bu tarayıcıda şifreleme (Web Crypto) yok."); toast("Şifreleme desteklenmiyor"); return; }
+  $("btnHs").disabled = true; $("hsMsg").textContent = "Çalışıyor…";
+  $("hsPill").className = "pill idle"; $("hsPill").textContent = "Çalışıyor…";
+  clearInterval(pollTimer); pollTimer = null;                 // düz metin yoklamayı sustur
+  hsGot = []; hsTest = true;
+  const variants = [
+    ["A · key2=sıfır, checksum=düz",    new Uint8Array(16), false],
+    ["B · key2=fw_data, checksum=düz",  FW_DATA,            false],
+    ["C · key2=sıfır, checksum=şifreli",new Uint8Array(16), true ],
+    ["D · key2=fw_data, checksum=şifreli",FW_DATA,          true ],
+  ];
+  try {
+    for (const [name, key2, coc] of variants){
+      const before = hsGot.length;
+      let frame;
+      try { frame = await buildPreComm(key2, coc); }
+      catch(e){ logLine("sys", `Varyant ${name} kurulamadı: ${errTxt(e)}`); continue; }
+      logLine("sys", `PRE_COMM gönderiliyor — varyant ${name}`);
+      await send(frame);
+      await new Promise(r => setTimeout(r, 1500));
+      if (hsGot.length > before) logLine("sys", `↳ Varyant ${name}: ${hsGot.length-before} paket cevap geldi!`);
+    }
+  } finally {
+    await new Promise(r => setTimeout(r, 800));
+    hsTest = false;
+  }
+  if (hsGot.length){
+    $("hsPill").className = "pill ok"; $("hsPill").textContent = `${hsGot.length} paket cevap`;
+    $("hsMsg").textContent = `Scooter cevap verdi (${hsGot.length} paket). Bu yaklaşım bu modelde çalışıyor. Log'u kopyalayıp gönderin.`;
+    logLine("sys", `EL SIKIŞMA: ${hsGot.length} paket cevap alındı. Bu çok iyi haber.`);
+  } else {
+    $("hsPill").className = "pill warn"; $("hsPill").textContent = "Cevap yok";
+    $("hsMsg").textContent = "Dört varyanta da cevap gelmedi. Log'u kopyalayıp gönderin.";
+    logLine("sys", "EL SIKIŞMA: hiçbir varyanta cevap gelmedi.");
+  }
+  $("btnHs").disabled = false;
 }
 function onDisconnected(){
   clearInterval(pollTimer); pollTimer = null; txChar = null;
   setConn("warn","Bağlantı koptu"); $("dvState").textContent = "Bağlantı koptu"; $("btnDisconnect").disabled = true;
+  $("btnHs").disabled = true; $("hsMsg").textContent = "Önce scooter'a bağlanın.";
   logLine("sys","Bağlantı koptu."); savePark(true); toast("Scooter bağlantısı koptu");
 }
 function resetData(){
@@ -1738,6 +1814,7 @@ $("btnCopyLog").addEventListener("click", () => {
 });
 $("btnClearLog").addEventListener("click", () => $("log").innerHTML = "");
 function parseHex(s){ const t = s.replace(/0x/gi,"").replace(/[^0-9a-f]/gi," ").trim().split(/\s+/).filter(Boolean); return t.map(x=>parseInt(x,16)).filter(n=>!isNaN(n)&&n<256); }
+$("btnHs").addEventListener("click", runHandshakeTest);
 $("btnSendHex").addEventListener("click", () => { const b = parseHex($("hexIn").value); if (b.length) send(Uint8Array.from(b)); });
 $("btnAddCs").addEventListener("click", () => { let b = parseHex($("hexIn").value); if (b[0]===0x5A && b[1]===0xA5) b = b.slice(2, 2 + 5 + b[2]); if (b.length >= 5) $("hexIn").value = hex(nbPacket(b)); });
 
